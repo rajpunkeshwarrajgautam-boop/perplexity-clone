@@ -1,0 +1,25 @@
+HTTP/1.1 401 Unauthorized
+x-dns-prefetch-control: off
+expect-ct: max-age=0
+x-frame-options: SAMEORIGIN
+strict-transport-security: max-age=15552000; includeSubDomains
+x-download-options: noopen
+x-content-type-options: nosniff
+x-permitted-cross-domain-policies: none
+referrer-policy: no-referrer
+x-xss-protection: 0
+access-control-allow-private-network: true
+access-control-allow-credentials: true
+access-control-allow-headers: lang,provider-key,Access-Control-Allow-Origin,Access-Control-Allow-Headers,Access-Control-Request-Headers,Access-Control-Request-Method,Access-Control-Allow-Private-Network,Accept,Accept-Encoding,Authorization,Content-Type,Content-Encoding,Origin,Credentials
+access-control-allow-methods: GET, POST, OPTIONS, DELETE, PUT, PATCH
+access-control-allow-origin: https://bytez.com
+access-control-max-age: 864000
+content-type: application/json; charset=utf-8
+Content-Length: 24
+etag: W/"18-XPDV80vbMk4yY1/PADG4jYM4rSI"
+x-response-time: 27ms
+date: Mon, 02 Mar 2026 04:56:51 GMT
+via: 1.1 google
+Alt-Svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+
+{"error":"Unauthorized"}
