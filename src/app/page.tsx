@@ -1,11 +1,13 @@
 'use client';
-import { Search, Compass, BookOpen, BrainCircuit, Globe } from 'lucide-react';
+import { Search, BookOpen, BrainCircuit, Globe } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SourceCard } from '@/components/ui/SourceCard';
 
+type SourceType = { id: number; title: string; relevance: string; url?: string };
 type Role = 'user' | 'assistant' | 'system';
-type Message = { id: string; role: Role; content: string };
+type Message = { id: string; role: Role; content: string; sources?: SourceType[] };
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -62,12 +64,24 @@ export default function Home() {
               try {
                 const text = JSON.parse(line.slice(2));
                 addedText += text;
-              } catch (err) {}
+              } catch (_) {}
             } else if (line.startsWith('e:')) {
               try {
                 const meta = JSON.parse(line.slice(2));
                 if (meta.chatId) setChatId(meta.chatId);
-              } catch (err) {}
+              } catch (_) {}
+            } else if (line.startsWith('s:')) {
+              try {
+                const sources = JSON.parse(line.slice(2));
+                setMessages(prev => {
+                  const clone = [...prev];
+                  const lastIndex = clone.length - 1;
+                  const last = { ...clone[lastIndex] };
+                  last.sources = sources;
+                  clone[lastIndex] = last;
+                  return clone;
+                });
+              } catch (_) {}
             }
           }
 
@@ -170,6 +184,17 @@ export default function Home() {
                       </div>
                       
                       <div className="flex flex-col gap-3 w-full">
+                        {message.sources && message.sources.length > 0 && (
+                          <div className="flex flex-col gap-3 mb-2">
+                             <h3 className="text-sm font-semibold flex items-center gap-2 text-gray-300"><BookOpen size={16} className="text-gray-500" /> Sources</h3>
+                             <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar smooth-scroll snap-x">
+                                {message.sources.map((s: SourceType, idx: number) => (
+                                   <div key={idx} className="snap-start"><SourceCard source={s} index={idx} /></div>
+                                ))}
+                             </div>
+                          </div>
+                        )}
+                        
                         <div className="prose prose-invert prose-p:leading-relaxed prose-pre:bg-[#1c1c21] prose-pre:border prose-pre:border-[#2a2a32] text-gray-200 text-[15px] max-w-none">
                           <ReactMarkdown>{message.content}</ReactMarkdown>
                         </div>

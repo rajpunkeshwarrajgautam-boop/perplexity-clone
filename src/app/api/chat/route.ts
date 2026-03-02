@@ -1,4 +1,5 @@
 import { streamText } from 'ai';
+type CoreMessage = { role: 'user' | 'assistant' | 'system' | 'data', content: string };
 import { createOpenAI } from '@ai-sdk/openai';
 import { vectorSearch } from '@/lib/vector-store';
 import { db } from '@/lib/firebase-admin';
@@ -39,23 +40,25 @@ export async function POST(req: Request) {
     createdAt: admin.firestore.FieldValue.serverTimestamp()
   });
 
-  let searchResults: any[] = [];
+  let searchResults: Array<{ doc: { filename?: string; content?: string; metadata?: any }; score: number }> = [];
   try {
     searchResults = await vectorSearch(latestMessage.content, 4);
   } catch (err) {
     console.error('Vector search failed or not initialized', err);
   }
   
-  let citationsHeader = '';
+  const sourcesData: Array<{ id: number; title: string; relevance: string }> = [];
   let contextString = '';
 
   if (searchResults.length > 0) {
-    citationsHeader = '### 📚 Sources Found:\n\n';
     searchResults.forEach((res, index) => {
-      citationsHeader += `- **[${index + 1}]** \`${res.doc.filename?.replace('.pdf', '') || res.doc.metadata?.source || 'Source'}\` (relevance: ${(res.score*100).toFixed(0)}%)\n`;
+      sourcesData.push({
+        id: index + 1,
+        title: res.doc.filename?.replace('.pdf', '') || res.doc.metadata?.source || 'Source',
+        relevance: (res.score*100).toFixed(0)
+      });
       contextString += `[Source ${index + 1}: ${res.doc.filename || res.doc.metadata?.source || 'Source'}]\n${res.doc.content}\n\n`;
     });
-    citationsHeader += '---\n\n';
   }
 
   const fullMessages = [
@@ -74,12 +77,12 @@ ${contextString}`
 
   const result = streamText({
     model: bytezProvider('gpt-4o-mini'),
-    messages: fullMessages as any,
+    messages: fullMessages as CoreMessage[],
     onFinish: async (info) => {
-       const aiMessage = citationsHeader + info.text;
        await db.collection('chats').doc(currentChatId).collection('messages').add({
         role: 'assistant',
-        content: aiMessage,
+        content: info.text,
+        sources: sourcesData,
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
     }
@@ -96,9 +99,8 @@ ${contextString}`
       // Send chat ID first
       controller.enqueue(new TextEncoder().encode(`e:${JSON.stringify({ chatId: currentChatId })}\n`));
       
-      // Send citations block first
-      if (citationsHeader) {
-          controller.enqueue(new TextEncoder().encode(`0:${JSON.stringify(citationsHeader)}\n`));
+      if (sourcesData.length > 0) {
+          controller.enqueue(new TextEncoder().encode(`s:${JSON.stringify(sourcesData)}\n`));
       }
 
       while (true) {
