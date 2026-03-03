@@ -1,66 +1,70 @@
 /**
  * @file /api/chat/route.ts
- * @description Production-grade RAG chat streaming endpoint.
- * Features: Zod validation, rate limiting, Firebase persistence, vector search.
+ * @description Architecture Upgrade: Perplexity-style Answer Engine.
+ * Integrates Hybrid Search (Tavily live web + Firestore Vector DB).
+ * Enforces citation mapping, Pro searches, and model orchestration.
  */
 import { streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { NextResponse } from 'next/server';
-import { vectorSearch } from '@/lib/vector-store';
+import { hybridSearch } from '@/lib/hybrid-search';
 import { db } from '@/lib/firebase-admin';
 import { chatRateLimit } from '@/lib/rate-limiter';
 import { badRequest, tooManyRequests } from '@/lib/api-handler';
-import { chatRequestSchema, type FirestoreMessage, type FirestoreSource } from '@/lib/schemas';
+import { chatRequestSchema, type FirestoreMessage } from '@/lib/schemas';
 import * as admin from 'firebase-admin';
 
-export const maxDuration = 30;
+export const maxDuration = 45; // Increased for Pro web searches
 export const dynamic = 'force-dynamic';
 
 type CoreMessage = { role: 'user' | 'assistant' | 'system'; content: string };
 
 export async function POST(req: Request): Promise<Response> {
   // ── 1. Rate limiting ────────────────────────────────────────────────────
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
-    req.headers.get('x-real-ip') ??
-    'anonymous';
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+             req.headers.get('x-real-ip') ?? 'anonymous';
 
   const rl = chatRateLimit(ip);
   if (!rl.success) return tooManyRequests(rl.resetAt);
 
   // ── 2. Parse & validate body ─────────────────────────────────────────────
   let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return badRequest('Request body must be valid JSON.');
-  }
+  try { body = await req.json(); } catch { return badRequest('JSON parse failed'); }
 
   const parsed = chatRequestSchema.safeParse(body);
   if (!parsed.success) {
-    const issues = parsed.error.issues
-      .map((i) => `${i.path.join('.')}: ${i.message}`)
-      .join(', ');
-    return badRequest(`Validation error — ${issues}`);
+    const issues = parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
+    return badRequest(`Validation failed: ${issues}`);
   }
 
-  const { messages, chatId, focusMode } = parsed.data;
+  const { messages, chatId, focusMode, isProSearch, modelConfig } = parsed.data;
   const latestMessage = messages[messages.length - 1];
 
-  // ── 3. Initialise OpenAI-compatible provider ──────────────────────────────
+  // ── 3. Map selected model (Model Agnostic / ROSE abstraction) ───────────
+  // Here we use Bytez.com to simulate the ROSE inference engine, proxying queries
+  // to different top-tier models (Sonar, GPT-4o, Claude 3.5, Grok).
   const bytezProvider = createOpenAI({
     apiKey: process.env.BYTEZ_API_KEY,
     baseURL: 'https://api.bytez.com/v1',
   });
 
-  // ── 4. Persist / retrieve chat in Firestore ───────────────────────────────
-  let currentChatId = chatId;
+  const modelMap: Record<string, string> = {
+    'sonar': 'gpt-4o-mini', // Simulated Sonar (fast/small)
+    'gpt-4o': 'gpt-4o',
+    'claude-3-5-sonnet': 'anthropic/claude-3.5-sonnet',
+    'grok-2': 'x-ai/grok-2',
+  };
+  const activeModel = modelMap[modelConfig?.modelName ?? 'sonar'] ?? 'gpt-4o-mini';
 
+  // ── 4. Persist Chat State ──────────────────────────────────────────────────
+  let currentChatId = chatId;
   try {
     if (!currentChatId) {
       const chatRef = await db.collection('chats').add({
-        title: latestMessage.content.substring(0, 60),
+        title: latestMessage.content.substring(0, 50),
         focusMode,
+        isProSearch,
+        modelName: modelConfig?.modelName ?? 'sonar',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
@@ -71,68 +75,65 @@ export async function POST(req: Request): Promise<Response> {
       });
     }
 
-    const userMsg: FirestoreMessage = {
+    await db.collection('chats').doc(currentChatId).collection('messages').add({
       role: 'user',
       content: latestMessage.content,
       createdAt: admin.firestore.FieldValue.serverTimestamp() as FirebaseFirestore.Timestamp,
-    };
-    await db
-      .collection('chats')
-      .doc(currentChatId)
-      .collection('messages')
-      .add(userMsg);
-  } catch (dbErr) {
-    console.error('[Chat API] Firestore write error:', dbErr);
-  }
-
-  // ── 5. Vector search ──────────────────────────────────────────────────────
-  const sourcesData: FirestoreSource[] = [];
-  let contextString = '';
-
-  try {
-    const searchResults = await vectorSearch(latestMessage.content, 4);
-    searchResults.forEach((res, index) => {
-      const title =
-        res.doc.filename?.replace('.pdf', '') ??
-        (res.doc.metadata?.['source'] as string | undefined) ??
-        'Source';
-      sourcesData.push({ id: index + 1, title, relevance: (res.score * 100).toFixed(0) });
-      contextString += `[Source ${index + 1}: ${title}]\n${res.doc.content}\n\n`;
     });
-  } catch (vsErr) {
-    console.error('[Chat API] Vector search error:', vsErr);
+  } catch (dbErr) {
+    console.warn('[Chat API] Firestore write warning:', dbErr);
   }
 
-  // ── 6. Build prompt ───────────────────────────────────────────────────────
-  const systemContent =
-    'You are a highly accurate, concise AI research assistant similar to Perplexity. ' +
-    'Always prioritise the provided context when answering. ' +
-    'If the context is insufficient, say so clearly, then answer from general knowledge. ' +
-    'Format all responses with Markdown (headings, bold, bullet points) for readability.\n\n' +
-    (contextString ? `--- Retrieved Context ---\n${contextString}` : '');
+  // ── 5. Hybrid Retrieval (Web + Vector DB) ────────────────────────────────
+  const { sources, contextString } = await hybridSearch(
+    latestMessage.content,
+    focusMode,
+    isProSearch
+  );
+
+  // ── 6. Build the Answer Prompt ───────────────────────────────────────────
+  let systemContent = `You are a highly capable answering engine operating as a "digital worker".
+You must synthesise information to create a concise, verifiable, and conversational answer.
+CRITICAL RULES:
+1. You are NOT supposed to say anything that you didn't retrieve.
+2. Every claim MUST be backed by an inline citation using the source ID, formatted exactly like: [1] or [1][3].
+3. Do not just list links, weave the citations naturally into your prose.
+4. If the retrieved context does not contain the answer, explicitly state that you cannot find the information based on the retrieved sources, before attempting to answer from general knowledge (if applicable).
+5. If the user asks for a simple conversational task (e.g., "hello"), reply normally.
+
+--- RETRIEVED SOURCES ---
+${contextString || 'No context found for this query.'}
+-------------------------
+End of sources. Now answer the user's latest message comprehensively using ONLY the sources above.`;
+
+  // Writing mode bypasses strict RAG rules for creative freedom
+  if (focusMode === 'Writing') {
+    systemContent = `You are an expert copywriter, author, and prose editor.
+Assist the user with creative writing. Do not use inline citations unless explicitly requested.
+Base your style on the best literature and copywriting practices.`;
+  }
 
   const coreMessages: CoreMessage[] = [
     { role: 'system', content: systemContent },
-    ...messages.map((m) => ({ role: m.role, content: m.content })),
+    ...messages.map(m => ({ role: m.role, content: m.content })),
   ];
 
-  // ── 7. Stream response ────────────────────────────────────────────────────
+  // ── 7. Stream LLM Response ───────────────────────────────────────────────
   const result = streamText({
-    model: bytezProvider('gpt-4o-mini'),
+    model: bytezProvider(activeModel),
     messages: coreMessages as NonNullable<Parameters<typeof streamText>[0]['messages']>,
-    temperature: 0.4,
+    temperature: modelConfig?.temperature ?? 0.3, // Lower temp for factual RAG
     onFinish: async ({ text }) => {
       if (!currentChatId) return;
       try {
-        const aiMsg: FirestoreMessage = {
+        await db.collection('chats').doc(currentChatId).collection('messages').add({
           role: 'assistant',
           content: text,
-          sources: sourcesData,
+          sources,
           createdAt: admin.firestore.FieldValue.serverTimestamp() as FirebaseFirestore.Timestamp,
-        };
-        await db.collection('chats').doc(currentChatId).collection('messages').add(aiMsg);
-      } catch (dbErr) {
-        console.error('[Chat API] Firestore assistant write error:', dbErr);
+        });
+      } catch (e) {
+        console.warn('Failed to save assistant reply:', e);
       }
     },
   });
@@ -141,17 +142,13 @@ export async function POST(req: Request): Promise<Response> {
   const reader = textStream.body?.getReader();
   if (!reader) return textStream;
 
-  // ── 8. Inject metadata then pipe the LLM stream ──────────────────────────
+  // ── 8. Multiplex Streaming Context ───────────────────────────────────────
   const encoder = new TextEncoder();
-
   const stream = new ReadableStream({
     async start(controller) {
-      controller.enqueue(encoder.encode(`e:${JSON.stringify({ chatId: currentChatId })}\n`));
-
-      if (sourcesData.length > 0) {
-        controller.enqueue(encoder.encode(`s:${JSON.stringify(sourcesData)}\n`));
-      }
-
+      if (currentChatId) controller.enqueue(encoder.encode(`e:${JSON.stringify({ chatId: currentChatId })}\n`));
+      if (sources.length > 0) controller.enqueue(encoder.encode(`s:${JSON.stringify(sources)}\n`));
+      
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;

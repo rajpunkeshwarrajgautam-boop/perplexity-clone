@@ -23,7 +23,12 @@ export const chatRequestSchema = z.object({
     .min(1, 'At least one message is required')
     .max(100, 'Too many messages in context'),
   chatId: z.string().optional(),
-  focusMode: z.enum(['All', 'Academic', 'Gov']).default('All'),
+  focusMode: z.enum(['All', 'Academic', 'Writing', 'Web']).default('All'),
+  isProSearch: z.boolean().default(false),
+  modelConfig: z.object({
+    temperature: z.number().min(0).max(1).default(0.4),
+    modelName: z.enum(['sonar', 'gpt-4o', 'claude-3-5-sonnet', 'grok-2']).default('sonar'),
+  }).optional(),
 });
 
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
@@ -67,7 +72,11 @@ export interface FirestoreSource {
   id: number;
   title: string;
   relevance: string;
+  domain?: string;
   url?: string;
+  favicon?: string;
+  snippet?: string;
+  isWeb?: boolean;
 }
 
 /** Shape of an embedding document in Firestore */

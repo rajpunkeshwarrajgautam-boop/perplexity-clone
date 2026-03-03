@@ -1,22 +1,23 @@
 'use client';
-import { Search, BookOpen, BrainCircuit, Globe, Volume2 } from 'lucide-react';
+import React from 'react';
+
+import { Search, BookOpen, BrainCircuit, Globe, Volume2, ShieldAlert, FileText, Compass, PenTool, Sparkles, SlidersHorizontal, Settings2 } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SourceCard } from '@/components/ui/SourceCard';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import type { Components } from 'react-markdown';
+import type { FirestoreSource } from '@/lib/schemas';
 
-type SourceType = { id: number; title: string; relevance: string; url?: string };
 type Role = 'user' | 'assistant' | 'system';
-type Message = { id: string; role: Role; content: string; sources?: SourceType[] };
+type Message = { id: string; role: Role; content: string; sources?: FirestoreSource[] };
 
-/** Suggested follow-up questions derived from the latest AI answer */
 const FOLLOW_UP_SUFFIX_LENGTH = 3;
 
-/** Rough heuristic: parse up to 3 plausible follow-up questions from the response */
 function extractFollowUps(content: string): string[] {
   const sentences = content
     .split(/[.!?]/)
@@ -29,18 +30,13 @@ function extractFollowUps(content: string): string[] {
   for (const s of candidates) {
     const lower = s.toLowerCase();
     if (
-      lower.includes('how') ||
-      lower.includes('what') ||
-      lower.includes('why') ||
-      lower.includes('when') ||
-      lower.includes('explain') ||
-      lower.includes('describe')
+      lower.includes('how') || lower.includes('what') || lower.includes('why') || 
+      lower.includes('when') || lower.includes('explain') || lower.includes('describe')
     ) {
       followUps.push(s.charAt(0).toUpperCase() + s.slice(1) + '?');
       if (followUps.length === FOLLOW_UP_SUFFIX_LENGTH) break;
     }
   }
-
   return followUps;
 }
 
@@ -49,7 +45,10 @@ export default function Home() {
   const [chatId, setChatId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [focusMode, setFocusMode] = useState<'All' | 'Academic'>('All');
+  const [focusMode, setFocusMode] = useState<'All' | 'Academic' | 'Writing' | 'Web'>('All');
+  const [isProSearch, setIsProSearch] = useState(false);
+  const [modelName, setModelName] = useState<'sonar' | 'gpt-4o' | 'claude-3-5-sonnet' | 'grok-2'>('sonar');
+  const [showSettings, setShowSettings] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -76,15 +75,21 @@ export default function Home() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, chatId }),
+        body: JSON.stringify({ 
+          messages: newMessages, 
+          chatId,
+          focusMode,
+          isProSearch,
+          modelConfig: { modelName, temperature: focusMode === 'Writing' ? 0.7 : 0.3 }
+        }),
       });
 
       if (!res.ok) throw new Error(res.statusText);
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
-
       const assistantMsgId = `${Date.now()}-ai`;
+
       setMessages((prev) => [
         ...prev,
         { id: assistantMsgId, role: 'assistant', content: '' },
@@ -114,8 +119,7 @@ export default function Home() {
                 const sources = JSON.parse(line.slice(2));
                 setMessages((prev) => {
                   const clone = [...prev];
-                  const last = { ...clone[clone.length - 1], sources };
-                  clone[clone.length - 1] = last;
+                  clone[clone.length - 1] = { ...clone[clone.length - 1], sources };
                   return clone;
                 });
               } catch { /* ignore */ }
@@ -125,9 +129,10 @@ export default function Home() {
           if (addedText) {
             setMessages((prev) => {
               const clone = [...prev];
-              const last = { ...clone[clone.length - 1] };
-              last.content += addedText;
-              clone[clone.length - 1] = last;
+              clone[clone.length - 1] = { 
+                ...clone[clone.length - 1], 
+                content: clone[clone.length - 1].content + addedText 
+              };
               return clone;
             });
           }
@@ -140,13 +145,13 @@ export default function Home() {
         {
           id: Date.now().toString(),
           role: 'assistant',
-          content: 'An error occurred while fetching the response. Please try again.',
+          content: 'An error occurred while connecting to ROSE inference. Please try again.',
         },
       ]);
     } finally {
       setIsLoading(false);
     }
-  }, [messages, input, isLoading, chatId]);
+  }, [messages, input, isLoading, chatId, focusMode, isProSearch, modelName]);
 
   const handleReadAloud = useCallback(async (msgId: string, text: string) => {
     if (playingId === msgId) return;
@@ -168,7 +173,7 @@ export default function Home() {
     }
   }, [playingId]);
 
-  /** Custom react-markdown component map for syntax-highlighted code blocks */
+  /** Custom react-markdown component map for syntax-highlighted code blocks + citations */
   const markdownComponents: Components = {
     code({ className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
@@ -182,20 +187,100 @@ export default function Home() {
         );
       }
       return (
-        <code
-          className="bg-[#1c1c21] border border-[#2a2a32] text-indigo-300 px-1.5 py-0.5 rounded text-[0.82em] font-mono"
-          {...props}
-        >
+        <code className="bg-[#1c1c21] border border-[#2a2a32] text-indigo-300 px-1.5 py-0.5 rounded text-[0.82em] font-mono" {...props}>
           {children}
         </code>
       );
     },
+    // Intercept [1], [2] brackets to render them as citation badges
+    p({ children }) {
+      const modifiedChildren = React.Children.map(children, child => {
+        if (typeof child === 'string') {
+          return child.split(/(\[\d+\])/g).map((part, i) => {
+            const match = part.match(/\[(\d+)\]/);
+            if (match) {
+              return (
+                <sup key={i} className="inline-flex cursor-pointer text-xs font-semibold px-1 rounded-sm bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/40 transition-colors mx-0.5 relative -top-1">
+                  {match[1]}
+                </sup>
+              );
+            }
+            return part;
+          });
+        }
+        return child;
+      });
+      return <p className="mb-4">{modifiedChildren}</p>;
+    }
   };
 
   return (
     <div className="flex flex-col h-full bg-[#0e0e10] text-gray-100 font-sans relative">
       <main className="flex-1 overflow-y-auto px-4 py-8 scrollbar-thin scrollbar-thumb-[#2a2a32] scrollbar-track-transparent">
-        <div className="max-w-3xl mx-auto flex flex-col gap-8 pb-40">
+        <div className="max-w-4xl mx-auto flex flex-col gap-8 pb-40">
+
+          {/* ─── HEADER / SETTINGS ─── */}
+          {messages.length === 0 && (
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium text-gray-400 hover:bg-[#1c1c21] transition-colors"
+              >
+                <Settings2 size={14} /> Models & Controls
+              </button>
+            </div>
+          )}
+          
+          <AnimatePresence>
+            {showSettings && messages.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, y: -10 }}
+                animate={{ opacity: 1, height: 'auto', y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -10 }}
+                className="bg-[#1c1c21] border border-[#2a2a32] rounded-2xl p-5 shadow-2xl overflow-hidden"
+              >
+                <div className="flex flex-col sm:flex-row gap-8">
+                  <div className="flex-1">
+                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <BrainCircuit size={14}/> Base Model
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[ 
+                        { id: 'sonar', label: 'Sonar', tag: 'Fast' },
+                        { id: 'gpt-4o', label: 'GPT-4o', tag: 'Smart' },
+                        { id: 'claude-3-5-sonnet', label: 'Claude 3.5', tag: 'Sonnet' },
+                        { id: 'grok-2', label: 'Grok-2', tag: 'X' },
+                      ].map(model => (
+                        <button
+                          key={model.id}
+                          onClick={() => setModelName(model.id as any)}
+                          className={`flex items-center justify-between p-3 rounded-xl border text-sm transition-all ${modelName === model.id ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-200' : 'bg-[#15151a] border-[#2a2a32] text-gray-400 hover:border-gray-600'}`}
+                        >
+                          <span className="font-medium">{model.label}</span>
+                          <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-md bg-black/40 text-gray-500">{model.tag}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1">
+                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <Compass size={14}/> Retrieval Context
+                    </h4>
+                    <label className="flex items-center justify-between p-3 rounded-xl border border-[#2a2a32] bg-[#15151a] cursor-pointer hover:border-gray-600 transition-colors">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-gray-200 flex items-center gap-2"><Sparkles size={14} className={isProSearch ? "text-indigo-400" : ""}/> Pro Search</span>
+                        <span className="text-[11px] text-gray-500 mt-1">Deep analysis, iterative multi-step queries</span>
+                      </div>
+                      <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors ${isProSearch ? 'bg-indigo-500' : 'bg-[#2a2a32]'}`} onClick={() => setIsProSearch(!isProSearch)}>
+                        <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isProSearch ? 'translate-x-2' : '-translate-x-2'}`} />
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ─── EMPTY STATE ─── */}
           {messages.length === 0 && (
@@ -203,49 +288,56 @@ export default function Home() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-              className="flex flex-col items-center justify-center h-[70vh] text-center space-y-6"
+              className="flex flex-col items-center justify-center pt-[10vh] text-center space-y-8"
             >
               <div className="space-y-2">
-                <h2 className="text-4xl font-semibold text-gray-100 tracking-tight">
+                <h2 className="text-5xl font-semibold text-gray-100 tracking-tight font-serif">
                   What do you want to know?
                 </h2>
-                <p className="text-gray-500 text-base">Search across your RAG knowledge base instantly.</p>
+                <p className="text-gray-500 text-base">Your unified answer engine for web + workspace.</p>
               </div>
 
-              <div className="w-full max-w-2xl bg-[#1c1c21] rounded-2xl border border-[#2a2a32] shadow-2xl overflow-hidden focus-within:border-indigo-500/40 transition-colors duration-200">
-                <form onSubmit={handleSubmit} className="flex flex-col">
+              <div className="w-full max-w-2xl bg-[#1c1c21] rounded-2xl border border-[#2a2a32] shadow-2xl overflow-visible focus-within:border-indigo-500/40 focus-within:ring-4 ring-indigo-500/10 transition-all duration-300 transform-gpu relative z-10">
+                <form onSubmit={handleSubmit} className="flex flex-col relative">
                   <input
                     type="text"
-                    className="w-full bg-transparent text-gray-100 placeholder:text-gray-500 p-5 outline-none text-lg"
+                    className="w-full bg-transparent text-gray-100 placeholder:text-gray-500 p-5 outline-none text-[17px] font-medium"
                     placeholder="Ask anything..."
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     disabled={isLoading}
                     autoFocus
                   />
-                  <div className="flex items-center justify-between p-3 border-t border-[#2a2a32] bg-[#15151a]">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setFocusMode('All')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${focusMode === 'All' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:text-gray-300'}`}
-                      >
+                  
+                  {isProSearch && (
+                     <div className="absolute right-16 top-5">
+                       <span className="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md flex items-center gap-1 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+                         <Sparkles size={10} /> Pro
+                       </span>
+                     </div>
+                  )}
+
+                  <div className="flex items-center justify-between p-3 border-t border-[#2a2a32] bg-[#15151a] rounded-b-2xl">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button type="button" onClick={() => setFocusMode('All')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${focusMode === 'All' ? 'bg-[#2a2a32] text-gray-200 shadow-sm' : 'text-gray-500 hover:bg-[#1c1c21]'}`}>
                         <Globe size={14} /> All
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setFocusMode('Academic')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${focusMode === 'Academic' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:text-gray-300'}`}
-                      >
+                      <button type="button" onClick={() => setFocusMode('Academic')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${focusMode === 'Academic' ? 'bg-[#2a2a32] text-gray-200 shadow-sm' : 'text-gray-500 hover:bg-[#1c1c21]'}`}>
                         <BookOpen size={14} /> Academic
+                      </button>
+                      <button type="button" onClick={() => setFocusMode('Writing')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${focusMode === 'Writing' ? 'bg-[#2a2a32] text-gray-200 shadow-sm' : 'text-gray-500 hover:bg-[#1c1c21]'}`}>
+                        <PenTool size={14} /> Writing
+                      </button>
+                      <button type="button" onClick={() => setFocusMode('Web')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${focusMode === 'Web' ? 'bg-[#2a2a32] text-gray-200 shadow-sm' : 'text-gray-500 hover:bg-[#1c1c21]'}`}>
+                        <Search size={14} /> Web Only
                       </button>
                     </div>
                     <button
                       type="submit"
                       disabled={!input.trim() || isLoading}
-                      className="p-2 bg-white text-black rounded-full hover:bg-gray-100 disabled:opacity-40 disabled:bg-[#2a2a32] disabled:text-gray-500 transition-colors"
+                      className="p-2 bg-indigo-500 text-white rounded-full hover:bg-indigo-400 disabled:opacity-40 disabled:bg-[#2a2a32] disabled:text-gray-500 transition-colors shadow-md"
                     >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
                       </svg>
                     </button>
@@ -254,15 +346,20 @@ export default function Home() {
               </div>
 
               {/* Quick suggestions */}
-              <div className="grid grid-cols-2 gap-3 w-full max-w-2xl">
-                {['What is Semantic Search?', 'Explain Agentic RAG', 'Vector DBs overview', 'How to map chunks?'].map((q) => (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-4xl opacity-80 pt-4">
+                {[
+                  { q: 'Latest developments in Quantum Computing', icon: <Search size={16}/> },
+                  { q: 'Draft an email negotiating a higher salary', icon: <PenTool size={16}/> },
+                  { q: 'Summarize local RAG PDFs about AI', icon: <FileText size={16}/> },
+                  { q: 'Analyze Q3 tech earnings reports', icon: <Globe size={16}/> }
+                ].map(({q, icon}) => (
                   <button
                     key={q}
                     onClick={() => handleSubmit(undefined, q)}
-                    className="bg-[#1c1c21] border border-[#2a2a32] hover:border-[#3a3a42] text-left p-3.5 rounded-xl text-sm text-gray-400 transition-all duration-200 flex items-center gap-3 group hover:bg-[#25252b]"
+                    className="bg-[#1c1c21]/50 border border-[#2a2a32] hover:border-[#3a3a42] text-left p-3.5 rounded-xl text-xs text-gray-400 transition-all duration-200 flex flex-col gap-3 group hover:bg-[#25252b]"
                   >
-                    <Search size={16} className="text-gray-600 group-hover:text-indigo-400 transition-colors shrink-0" />
-                    {q}
+                    <span className="text-gray-600 group-hover:text-indigo-400 transition-colors shrink-0">{icon}</span>
+                    <span className="leading-snug">{q}</span>
                   </button>
                 ))}
               </div>
@@ -273,8 +370,7 @@ export default function Home() {
           <AnimatePresence initial={false}>
             {messages.map((message, msgIdx) => {
               const isUser = message.role === 'user';
-              const isLastAssistant =
-                !isUser && msgIdx === messages.length - 1 && !isLoading;
+              const isLastAssistant = !isUser && msgIdx === messages.length - 1 && !isLoading;
               const followUps = isLastAssistant ? extractFollowUps(message.content) : [];
 
               return (
@@ -287,26 +383,22 @@ export default function Home() {
                 >
                   {/* User bubble */}
                   {isUser && (
-                    <p className="text-gray-100 text-[17px] font-medium max-w-[85%] self-end pt-8 pb-1 leading-snug">
+                    <div className="text-gray-100 text-[20px] font-semibold max-w-[85%] self-end pt-10 pb-2 leading-tight">
                       {message.content}
-                    </p>
+                    </div>
                   )}
 
-                  {/* Assistant bubble */}
+                  {/* Assistant Engine */}
                   {!isUser && (
                     <div className="flex gap-4 w-full">
-                      <div className="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 shrink-0 flex items-center justify-center mt-1">
-                        <BrainCircuit size={16} className="text-indigo-400" />
-                      </div>
-
-                      <div className="flex flex-col gap-4 w-full min-w-0">
-                        {/* Source cards */}
+                      <div className="flex flex-col gap-6 w-full min-w-0">
+                        {/* Source cards container */}
                         {message.sources && message.sources.length > 0 && (
-                          <div className="flex flex-col gap-2">
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex items-center gap-2">
-                              <BookOpen size={13} /> Sources
+                          <div className="flex flex-col gap-3 pb-3 border-b border-[#1e1e24]">
+                            <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
+                              {isProSearch && <Sparkles size={12} className="text-indigo-400"/>} Sources
                             </h3>
-                            <div className="flex gap-3 overflow-x-auto pb-2 snap-x scrollbar-thin scrollbar-thumb-[#2a2a32] scrollbar-track-transparent">
+                            <div className="flex gap-3 overflow-x-auto pb-4 snap-x scrollbar-thin scrollbar-thumb-[#2a2a32] scrollbar-track-transparent">
                               {message.sources.map((s, idx) => (
                                 <div key={idx} className="snap-start shrink-0">
                                   <SourceCard source={s} index={idx} />
@@ -316,48 +408,62 @@ export default function Home() {
                           </div>
                         )}
 
-                        {/* Markdown content */}
-                        <div className="prose prose-invert prose-p:leading-relaxed prose-p:text-gray-200 prose-headings:text-gray-100 prose-strong:text-gray-100 prose-li:text-gray-300 prose-code:text-indigo-300 text-[15px] max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                          >
-                            {message.content}
-                          </ReactMarkdown>
-                        </div>
-
-                        {/* Action bar */}
-                        {!isLoading && message.content && (
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <CopyButton text={message.content} />
-                            <button
-                              onClick={() => handleReadAloud(message.id, message.content)}
-                              disabled={playingId !== null && playingId !== message.id}
-                              className={`flex items-center gap-2 text-xs transition-colors border border-[#2a2a32] bg-[#1c1c21] px-3 py-1.5 rounded-full hover:border-[#3a3a42] disabled:opacity-40 ${playingId === message.id ? 'text-indigo-400 border-indigo-500/30' : 'text-gray-400 hover:text-gray-200'}`}
-                            >
-                              <Volume2 size={13} />
-                              {playingId === message.id ? 'Playing…' : 'Read Aloud'}
-                            </button>
+                        {/* Markdown content Engine Style */}
+                        <div className="flex gap-4">
+                          <div className="w-8 h-8 rounded-full bg-[#1c1c21] shrink-0 flex items-center justify-center mt-1 border border-[#2a2a32]">
+                            <Search size={14} className="text-gray-300" />
                           </div>
-                        )}
-
-                        {/* Follow-up pills */}
-                        {followUps.length > 0 && (
-                          <div className="flex flex-col gap-2 mt-2 border-t border-[#1e1e24] pt-4">
-                            <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">Related</p>
-                            <div className="flex flex-wrap gap-2">
-                              {followUps.map((q) => (
-                                <button
-                                  key={q}
-                                  onClick={() => handleSubmit(undefined, q)}
-                                  className="text-xs text-gray-400 bg-[#1c1c21] border border-[#2a2a32] hover:border-indigo-500/40 hover:text-indigo-300 px-3 py-1.5 rounded-full transition-colors duration-200"
-                                >
-                                  {q}
-                                </button>
-                              ))}
+                          
+                          <div className="flex flex-col w-full max-w-none">
+                            <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-500 mb-2 mt-1 flex items-center gap-2">Answer</h3>
+                            <div className="prose prose-invert prose-p:leading-[1.75] prose-p:text-gray-300 prose-headings:text-gray-100 prose-strong:text-gray-100 prose-li:text-gray-300 prose-code:text-indigo-300 text-[16px] max-w-none font-serif tracking-[0.01em]">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeRaw]}
+                                components={markdownComponents}
+                              >
+                                {message.content}
+                              </ReactMarkdown>
                             </div>
+
+                            {/* Action bar */}
+                            {!isLoading && message.content && (
+                              <div className="flex items-center gap-2 mt-6 flex-wrap">
+                                <CopyButton text={message.content} />
+                                <button
+                                  onClick={() => handleReadAloud(message.id, message.content)}
+                                  disabled={playingId !== null && playingId !== message.id}
+                                  className={`flex items-center gap-2 text-xs transition-colors border border-[#2a2a32] bg-[#1c1c21] px-3 py-1.5 rounded-full hover:border-[#3a3a42] disabled:opacity-40 ${playingId === message.id ? 'text-indigo-400 border-indigo-500/30' : 'text-gray-400 hover:text-gray-200'}`}
+                                >
+                                  <Volume2 size={13} />
+                                  {playingId === message.id ? 'Playing…' : 'Speech'}
+                                </button>
+                                <span className="text-[10px] uppercase font-bold text-gray-600 tracking-wider ml-auto pr-2">
+                                  {modelName} engine
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Follow-up pills */}
+                            {followUps.length > 0 && (
+                              <div className="flex flex-col gap-3 mt-6 border-t border-[#1e1e24] pt-6">
+                                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2"><SlidersHorizontal size={12}/> Related Queries</p>
+                                <div className="flex flex-col gap-2">
+                                  {followUps.map((q) => (
+                                    <button
+                                      key={q}
+                                      onClick={() => handleSubmit(undefined, q)}
+                                      className="text-[15px] font-medium text-left text-gray-300 hover:text-indigo-400 py-2 border-b border-[#2a2a32] last:border-0 transition-colors duration-200 focus:outline-none flex justify-between items-center group"
+                                    >
+                                      {q}
+                                      <span className="text-gray-600 group-hover:text-indigo-400 transition-colors">+</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -371,17 +477,22 @@ export default function Home() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex gap-4 pt-4"
+              className="flex gap-4 pt-10"
             >
-              <div className="w-8 h-8 rounded-full bg-[#1c1c21] shrink-0 animate-pulse" />
-              <div className="flex flex-col gap-2.5 w-full max-w-lg pt-1.5">
-                {[1, 0.83, 0.65].map((w, i) => (
-                  <div
-                    key={i}
-                    className="h-4 bg-[#1c1c21] rounded animate-pulse"
-                    style={{ width: `${w * 100}%`, animationDelay: `${i * 100}ms` }}
-                  />
-                ))}
+              <div className="flex flex-col gap-6 w-full min-w-0">
+                <div className="h-16 w-full max-w-sm bg-[#1c1c21] rounded-xl animate-pulse" />
+                <div className="flex gap-4">
+                  <div className="w-8 h-8 rounded-full bg-[#1c1c21] shrink-0 animate-pulse border border-[#2a2a32]" />
+                  <div className="flex flex-col gap-3 w-full max-w-2xl pt-2">
+                    {[1, 0.9, 0.95, 0.4].map((w, i) => (
+                      <div
+                        key={i}
+                        className="h-3 bg-[#1c1c21] rounded animate-pulse"
+                        style={{ width: `${w * 100}%`, animationDelay: `${i * 100}ms` }}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
@@ -396,24 +507,30 @@ export default function Home() {
           <div className="max-w-3xl mx-auto pointer-events-auto">
             <form
               onSubmit={handleSubmit}
-              className="relative flex flex-col bg-[#1c1c21] border border-[#2a2a32] rounded-2xl shadow-2xl focus-within:border-indigo-500/40 transition-colors duration-200"
+              className="relative flex flex-col bg-[#1c1c21] border border-[#2a2a32] rounded-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] focus-within:border-indigo-500/40 focus-within:ring-4 ring-indigo-500/10 transition-all duration-300"
             >
               <input
                 type="text"
-                className="w-full bg-transparent text-gray-100 placeholder:text-gray-500 pt-4 pb-14 px-5 outline-none text-[15px]"
-                placeholder="Ask a follow-up..."
+                className="w-full bg-transparent text-gray-100 placeholder:text-gray-500 pt-5 pb-16 px-6 outline-none text-[15px] font-medium"
+                placeholder="Ask follow-up..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={isLoading}
               />
-              <div className="absolute bottom-3 right-3 flex items-center gap-2">
+              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer border transition-colors ${isProSearch ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-300' : 'bg-[#15151a] border-[#2a2a32] text-gray-500 hover:text-gray-300 hover:bg-[#1c1c21]'}`}>
+                    <Sparkles size={12}/> Pro Search
+                    <input type="checkbox" className="hidden" checked={isProSearch} onChange={() => setIsProSearch(!isProSearch)} />
+                  </label>
+                </div>
                 <button
                   type="submit"
                   disabled={!input.trim() || isLoading}
-                  className="p-2 bg-white text-black rounded-full hover:bg-gray-100 disabled:opacity-40 disabled:bg-[#2a2a32] disabled:text-gray-500 transition-colors"
+                  className="p-2.5 bg-indigo-500 text-white rounded-full hover:bg-indigo-400 disabled:opacity-40 disabled:bg-[#2a2a32] disabled:text-gray-500 transition-colors shadow-md"
                   aria-label="Send"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
                   </svg>
                 </button>
