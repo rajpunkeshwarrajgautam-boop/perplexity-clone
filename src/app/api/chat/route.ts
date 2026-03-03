@@ -11,7 +11,7 @@ import { hybridSearch } from '@/lib/hybrid-search';
 import { db } from '@/lib/firebase-admin';
 import { chatRateLimit } from '@/lib/rate-limiter';
 import { badRequest, tooManyRequests } from '@/lib/api-handler';
-import { chatRequestSchema, type FirestoreMessage } from '@/lib/schemas';
+import { chatRequestSchema } from '@/lib/schemas';
 import * as admin from 'firebase-admin';
 
 export const maxDuration = 45; // Increased for Pro web searches
@@ -41,20 +41,19 @@ export async function POST(req: Request): Promise<Response> {
   const latestMessage = messages[messages.length - 1];
 
   // ── 3. Map selected model (Model Agnostic / ROSE abstraction) ───────────
-  // Here we use Bytez.com to simulate the ROSE inference engine, proxying queries
-  // to different top-tier models (Sonar, GPT-4o, Claude 3.5, Grok).
-  const bytezProvider = createOpenAI({
-    apiKey: process.env.BYTEZ_API_KEY,
-    baseURL: 'https://api.bytez.com/v1',
+  // Here we use Groq to simulate the ROSE inference engine, offering ultra-fast LPU inference.
+  const groqProvider = createOpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: 'https://api.groq.com/openai/v1',
   });
 
   const modelMap: Record<string, string> = {
-    'sonar': 'gpt-4o-mini', // Simulated Sonar (fast/small)
-    'gpt-4o': 'gpt-4o',
-    'claude-3-5-sonnet': 'anthropic/claude-3.5-sonnet',
-    'grok-2': 'x-ai/grok-2',
+    'sonar': 'llama-3.1-8b-instant', // Simulated Sonar (fast/small)
+    'gpt-4o': 'llama-3.3-70b-versatile', // Simulated Smart Model
+    'claude-3-5-sonnet': 'llama-3.3-70b-versatile', // Simulated Smart Model
+    'grok-2': 'mixtral-8x7b-32768',
   };
-  const activeModel = modelMap[modelConfig?.modelName ?? 'sonar'] ?? 'gpt-4o-mini';
+  const activeModel = modelMap[modelConfig?.modelName ?? 'sonar'] ?? 'llama-3.1-8b-instant';
 
   // ── 4. Persist Chat State ──────────────────────────────────────────────────
   let currentChatId = chatId;
@@ -120,7 +119,7 @@ Base your style on the best literature and copywriting practices.`;
 
   // ── 7. Stream LLM Response ───────────────────────────────────────────────
   const result = streamText({
-    model: bytezProvider(activeModel),
+    model: groqProvider(activeModel),
     messages: coreMessages as NonNullable<Parameters<typeof streamText>[0]['messages']>,
     temperature: modelConfig?.temperature ?? 0.3, // Lower temp for factual RAG
     onFinish: async ({ text }) => {
