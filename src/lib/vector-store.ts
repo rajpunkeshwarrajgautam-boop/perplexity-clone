@@ -1,82 +1,104 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { embed } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-
-const bytezProvider = createOpenAI({
-  apiKey: process.env.BYTEZ_API_KEY,
-  baseURL: 'https://api.bytez.com/v1'
-});
+/**
+ * @file vector-store.ts
+ * @description Production vector search backed by Firebase Firestore.
+ * Embeddings are generated locally with Xenova/all-MiniLM-L6-v2 (384-dim).
+ */
+import { db } from '@/lib/firebase-admin';
+import type { FirestoreEmbedding } from '@/lib/schemas';
 
 export type VectorDoc = {
-  id: number;
-  filename: string;
+  id: string;
+  filename?: string;
   content: string;
   embedding: number[];
-}
+  metadata?: Record<string, string | number | boolean>;
+};
 
 export type SearchResult = {
   doc: VectorDoc;
   score: number;
-}
+};
 
-const VECTOR_STORE_PATH = path.join(process.cwd(), 'data/vector_store.json');
-
-let store: VectorDoc[] | null = null;
-
-export async function loadVectorStore() {
-  if (store) return store;
-  try {
-    const data = await fs.readFile(VECTOR_STORE_PATH, 'utf-8');
-    store = JSON.parse(data);
-    return store;
-  } catch (err) {
-    console.log('Error loading vector store or it does not exist.', err);
-    return [];
-  }
-}
-
-function cosineSimilarity(A: number[], B: number[]) {
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
+/** Cosine similarity between two equal-length vectors */
+function cosineSimilarity(A: number[], B: number[]): number {
+  if (A.length !== B.length) return 0;
+  let dot = 0, normA = 0, normB = 0;
   for (let i = 0; i < A.length; i++) {
-    dotProduct += A[i] * B[i];
+    dot += A[i] * B[i];
     normA += A[i] * A[i];
     normB += B[i] * B[i];
   }
-  if (normA === 0 || normB === 0) return 0;
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
 }
 
-let extractor: any = null;
+// Singleton: reuse the extractor pipeline across requests
+type Extractor = (text: string, opts: Record<string, unknown>) => Promise<{ data: Float32Array }>;
+let extractor: Extractor | null = null;
 
-export async function vectorSearch(query: string, topK: number = 3): Promise<SearchResult[]> {
-  const documents = await loadVectorStore();
-  if (!documents || documents.length === 0) return [];
+async function getExtractor(): Promise<Extractor> {
+  if (extractor) return extractor;
+  console.log('[VectorStore] Loading Xenova/all-MiniLM-L6-v2 embedding model…');
+  const { pipeline } = await import('@xenova/transformers');
+  extractor = (await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { quantized: true })) as unknown as Extractor;
+  return extractor;
+}
 
-  // Create embedding for query using local Transformer model
-  if (!extractor) {
-      console.log("Loading local Xenova embedding model in vectorSearch...");
-      const { pipeline } = await import('@xenova/transformers');
-      extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { quantized: true });
+/**
+ * Perform nearest-neighbour vector search against the Firestore embeddings collection.
+ *
+ * @param query - Natural language query string
+ * @param topK - Number of results to return (default 3)
+ * @param limit - Max Firestore docs to load for comparison (default 200)
+ */
+export async function vectorSearch(
+  query: string,
+  topK = 3,
+  limit = 200
+): Promise<SearchResult[]> {
+  // ── 1. Fetch documents from Firestore ──────────────────────────────────────
+  const documents: VectorDoc[] = [];
+  try {
+    const snapshot = await db.collection('embeddings').limit(limit).get();
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data() as FirestoreEmbedding;
+      documents.push({
+        id: docSnap.id,
+        filename: data.filename,
+        content: data.content,
+        embedding: data.embedding,
+        metadata: data.metadata,
+      });
+    });
+  } catch (err) {
+    console.error('[VectorStore] Firestore read error:', err);
+    return [];
   }
 
-  const out = await extractor(query, { pooling: 'mean', normalize: true });
-  const queryEmbedding = Array.from(out.data) as number[];
+  if (documents.length === 0) return [];
 
-  // Calculate similarity scores for all docs
-  const results: SearchResult[] = documents.map(doc => {
-      // Validate embedding
+  // ── 2. Generate query embedding ────────────────────────────────────────────
+  let queryEmbedding: number[];
+  try {
+    const embed = await getExtractor();
+    const out = await embed(query, { pooling: 'mean', normalize: true });
+    queryEmbedding = Array.from(out.data);
+  } catch (err) {
+    console.error('[VectorStore] Embedding generation error:', err);
+    return [];
+  }
+
+  // ── 3. Score & rank ────────────────────────────────────────────────────────
+  const results: SearchResult[] = documents
+    .map((doc) => {
       if (!Array.isArray(doc.embedding) || doc.embedding.length !== 384) {
-          return { doc, score: 0 };
+        return { doc, score: 0 };
       }
-      return {
-        doc,
-        score: cosineSimilarity(queryEmbedding, doc.embedding)
-      };
-  });
+      return { doc, score: cosineSimilarity(queryEmbedding, doc.embedding) };
+    })
+    .filter((r) => r.score > 0.1) // discard irrelevant docs below threshold
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
 
-  // Sort by highest score first and take topK
-  return results.sort((a, b) => b.score - a.score).slice(0, topK);
+  return results;
 }
