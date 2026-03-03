@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "ingest": "node scripts/ingest.mjs",
+    "ingest:dry-run": "node scripts/ingest.mjs --dry-run",
+    "ingest:pdf-dir": "node scripts/ingest.mjs --source D:/RAG/temp-pdf"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.31",
