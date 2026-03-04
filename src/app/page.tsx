@@ -4,16 +4,20 @@ import React from 'react';
 import { Search, BookOpen, BrainCircuit, Globe, Volume2, FileText, Compass, PenTool, Sparkles, SlidersHorizontal, Settings2, GitBranch, Wand2 } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+
+// ── Dynamic imports – excluded from initial JS bundle ────────────────────────
+const ReactMarkdown = dynamic(() => import('react-markdown'), { ssr: false });
+
+// remarkGfm and rehypeRaw: tiny plugins, statically imported
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+
+// framer-motion: static import (tree-shaken via optimizePackageImports in next.config)
 import { motion, AnimatePresence } from 'framer-motion';
 import { SourceCard } from '@/components/ui/SourceCard';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import type { FirestoreSource } from '@/lib/schemas';
-
-// Dynamic imports for heavy markdown parsing libraries - reduces initial JS bundle
-const ReactMarkdown = dynamic(() => import('react-markdown'), { ssr: false });
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
 
 type Role = 'user' | 'assistant' | 'system';
 type Message = { id: string; role: Role; content: string; sources?: FirestoreSource[] };

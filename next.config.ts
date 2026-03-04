@@ -60,6 +60,11 @@ const nextConfig: NextConfig = {
 
   // ── External packages (Next.js 15 stable API) ─────────────────────────────
   serverExternalPackages: ['firebase-admin', '@xenova/transformers'],
+
+  // ── Package Import Optimization (tree-shaking) ────────────────────────────
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
 };
 
 export default nextConfig;
