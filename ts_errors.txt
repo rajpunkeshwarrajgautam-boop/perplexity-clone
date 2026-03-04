@@ -1,5 +1,0 @@
-next.config.ts(5,3): error TS2353: Object literal may only specify known properties, and 'eslint' does not exist in type 'NextConfig'.
-src/app/page.tsx(8,21): error TS2339: Property 'input' does not exist on type 'UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>'.
-src/app/page.tsx(8,28): error TS2339: Property 'handleInputChange' does not exist on type 'UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>'.
-src/app/page.tsx(8,47): error TS2339: Property 'handleSubmit' does not exist on type 'UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>'.
-src/app/page.tsx(8,61): error TS2339: Property 'isLoading' does not exist on type 'UseChatHelpers<UIMessage<unknown, UIDataTypes, UITools>>'.

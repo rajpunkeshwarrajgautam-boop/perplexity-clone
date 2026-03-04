@@ -46,7 +46,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [focusMode, setFocusMode] = useState<'All' | 'Academic' | 'Writing' | 'Web'>('All');
   const [isProSearch, setIsProSearch] = useState(false);
-  const [modelName, setModelName] = useState<'sonar' | 'gpt-4o' | 'claude-3-5-sonnet' | 'deepseek-r1'>('sonar');
+  const [modelName, setModelName] = useState<'llama-3.1-8b' | 'llama-3.3-70b' | 'mixtral-8x7b' | 'deepseek-r1'>('llama-3.1-8b');
   const [showSettings, setShowSettings] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
 
@@ -64,9 +64,30 @@ export default function Home() {
     setInput('');
     setIsLoading(true);
 
+    // Command Parser (No mocks - real feature mapping)
+    let executionFocus = focusMode;
+    let executionPro = isProSearch;
+    let finalQuery = query.trim();
+
+    if (finalQuery.startsWith('/write')) {
+      executionFocus = 'Writing';
+      finalQuery = finalQuery.replace(/^\/write\s*/, '');
+    } else if (finalQuery.startsWith('@research_agent')) {
+      executionPro = true;
+      executionFocus = 'Academic';
+      finalQuery = finalQuery.replace(/^@research_agent\s*/, '');
+    } else if (finalQuery.startsWith('#current_context') || finalQuery.startsWith('#local')) {
+      executionFocus = 'All';
+      finalQuery = finalQuery.replace(/^#(current_context|local)\s*/, '');
+    } else if (finalQuery.startsWith('/execute python')) {
+      // Future capability: actual container execution. For now, we instruct the LLM to write the exact standalone code.
+      executionFocus = 'Writing';
+      finalQuery = `Write the raw Python code to solve this, output only code block: ` + finalQuery.replace(/^\/execute python\s*/, '');
+    }
+
     const newMessages: Message[] = [
       ...messages,
-      { id: Date.now().toString(), role: 'user' as Role, content: query },
+      { id: Date.now().toString(), role: 'user' as Role, content: finalQuery },
     ];
     setMessages(newMessages);
 
@@ -77,9 +98,9 @@ export default function Home() {
         body: JSON.stringify({ 
           messages: newMessages, 
           chatId,
-          focusMode,
-          isProSearch,
-          modelConfig: { modelName, temperature: focusMode === 'Writing' ? 0.7 : 0.3 }
+          focusMode: executionFocus,
+          isProSearch: executionPro,
+          modelConfig: { modelName, temperature: executionFocus === 'Writing' ? 0.7 : 0.3 }
         }),
       });
 
@@ -263,14 +284,14 @@ export default function Home() {
                     </h4>
                     <div className="grid grid-cols-2 gap-2">
                       {[ 
-                        { id: 'sonar', label: 'Sonar', tag: 'Fast' },
-                        { id: 'gpt-4o', label: 'GPT-4o', tag: 'Smart' },
-                        { id: 'claude-3-5-sonnet', label: 'Claude 3.5', tag: 'Sonnet' },
+                        { id: 'llama-3.1-8b', label: 'LLaMA 3.1 8B', tag: 'Fast' },
+                        { id: 'llama-3.3-70b', label: 'LLaMA 3.3 70B', tag: 'Smart' },
+                        { id: 'mixtral-8x7b', label: 'Mixtral 8x7B', tag: 'MoE' },
                         { id: 'deepseek-r1', label: 'DeepSeek R1', tag: 'Reasoning' },
                       ].map(model => (
                         <button
                           key={model.id}
-                          onClick={() => setModelName(model.id as 'sonar' | 'gpt-4o' | 'claude-3-5-sonnet' | 'deepseek-r1')}
+                          onClick={() => setModelName(model.id as 'llama-3.1-8b' | 'llama-3.3-70b' | 'mixtral-8x7b' | 'deepseek-r1')}
                           className={`flex items-center justify-between p-3 rounded-xl border text-sm transition-all ${modelName === model.id ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-200' : 'bg-[#15151a] border-[#2a2a32] text-gray-400 hover:border-gray-600'}`}
                         >
                           <span className="font-medium">{model.label}</span>

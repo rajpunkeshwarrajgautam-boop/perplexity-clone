@@ -18,11 +18,11 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://clerk.com https://*.clerk.accounts.dev",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://clerk.com https://*.clerk.accounts.dev https://clerk.example.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://api.bytez.com https://*.clerk.accounts.dev https://clerk.com wss:",
+              "connect-src 'self' https://api.bytez.com https://api.groq.com https://api.tavily.com https://*.clerk.accounts.dev https://clerk.com https://clerk.example.com wss:",
               "frame-src https://*.clerk.accounts.dev https://clerk.com",
               "worker-src blob:",
             ].join('; '),

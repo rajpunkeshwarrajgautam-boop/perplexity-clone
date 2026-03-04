@@ -48,12 +48,12 @@ export async function POST(req: Request): Promise<Response> {
   });
 
   const modelMap: Record<string, string> = {
-    'sonar': 'llama-3.1-8b-instant', // Simulated Sonar (fast/small)
-    'gpt-4o': 'llama-3.3-70b-versatile', // Simulated Smart Model
-    'claude-3-5-sonnet': 'llama-3.3-70b-versatile', // Simulated Smart Model
+    'llama-3.1-8b': 'llama-3.1-8b-instant',
+    'llama-3.3-70b': 'llama-3.3-70b-versatile',
+    'mixtral-8x7b': 'mixtral-8x7b-32768',
     'deepseek-r1': 'deepseek-r1-distill-llama-70b',
   };
-  const activeModel = modelMap[modelConfig?.modelName ?? 'sonar'] ?? 'llama-3.1-8b-instant';
+  const activeModel = modelMap[modelConfig?.modelName ?? 'llama-3.1-8b'] ?? 'llama-3.1-8b-instant';
 
   // ── 4. Persist Chat State ──────────────────────────────────────────────────
   let currentChatId = chatId;
@@ -63,7 +63,7 @@ export async function POST(req: Request): Promise<Response> {
         title: latestMessage.content.substring(0, 50),
         focusMode,
         isProSearch,
-        modelName: modelConfig?.modelName ?? 'sonar',
+        modelName: modelConfig?.modelName ?? 'llama-3.1-8b',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });

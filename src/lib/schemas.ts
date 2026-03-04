@@ -27,7 +27,7 @@ export const chatRequestSchema = z.object({
   isProSearch: z.boolean().default(false),
   modelConfig: z.object({
     temperature: z.number().min(0).max(1).default(0.4),
-    modelName: z.enum(['sonar', 'gpt-4o', 'claude-3-5-sonnet', 'deepseek-r1']).default('sonar'),
+    modelName: z.enum(['llama-3.1-8b', 'llama-3.3-70b', 'mixtral-8x7b', 'deepseek-r1']).default('llama-3.1-8b'),
   }).optional(),
 });
 
