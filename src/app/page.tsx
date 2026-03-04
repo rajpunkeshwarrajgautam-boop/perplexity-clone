@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 
-import { Search, BookOpen, BrainCircuit, Globe, Volume2, FileText, Compass, PenTool, Sparkles, SlidersHorizontal, Settings2 } from 'lucide-react';
+import { Search, BookOpen, BrainCircuit, Globe, Volume2, FileText, Compass, PenTool, Sparkles, SlidersHorizontal, Settings2, GitBranch, Wand2 } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -299,84 +299,93 @@ export default function Home() {
             )}
           </AnimatePresence>
 
-          {/* ─── EMPTY STATE ─── */}
+          {/* ─── CANVAS EMPTY STATE ─── */}
           {messages.length === 0 && (
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-              className="flex flex-col items-center justify-center pt-[10vh] text-center space-y-8"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center justify-center pt-[15vh] w-full max-w-3xl mx-auto"
             >
-              <div className="space-y-2">
-                <h2 className="text-5xl font-semibold text-gray-100 tracking-tight font-serif">
-                  What do you want to know?
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.03)_0%,rgba(14,14,16,0)_60%)] pointer-events-none" />
+              
+              <div className="text-center mb-8 relative z-10 w-full">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-mono tracking-widest uppercase mb-6">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                  Infinite Canvas Active
+                </div>
+                <h2 className="text-4xl md:text-5xl font-medium tracking-tight bg-clip-text text-transparent bg-linear-to-br from-white via-gray-200 to-gray-500 mb-4">
+                  Everything connected.
                 </h2>
-                <p className="text-gray-500 text-base">Your unified answer engine for web + workspace.</p>
               </div>
 
-              <div className="w-full max-w-2xl bg-[#1c1c21] rounded-2xl border border-[#2a2a32] shadow-2xl overflow-visible focus-within:border-indigo-500/40 focus-within:ring-4 ring-indigo-500/10 transition-all duration-300 transform-gpu relative z-10">
-                <form onSubmit={handleSubmit} className="flex flex-col relative">
-                  <input
-                    type="text"
-                    className="w-full bg-transparent text-gray-100 placeholder:text-gray-500 p-5 outline-none text-[17px] font-medium"
-                    placeholder="Ask anything..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    disabled={isLoading}
-                    autoFocus
-                  />
+              <div className="w-full bg-[#111113]/80 backdrop-blur-xl rounded-2xl border border-[#2a2a32] shadow-2xl overflow-visible focus-within:border-indigo-500/50 focus-within:shadow-[0_0_30px_rgba(99,102,241,0.1)] transition-all duration-300 relative z-20 group">
+                <form onSubmit={handleSubmit} className="flex flex-col relative w-full">
+                  <div className="flex items-center px-5 py-4 w-full">
+                    <span className="text-indigo-400 font-mono text-sm mr-3 font-bold opacity-70">~</span>
+                    <input
+                      type="text"
+                      className="w-full bg-transparent text-gray-100 placeholder:text-gray-600 outline-none text-[16px] font-sans"
+                      placeholder="Type '/' for commands, '@' for agents, or natural language..."
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      disabled={isLoading}
+                      autoFocus
+                    />
+                  </div>
                   
                   {isProSearch && (
-                     <div className="absolute right-16 top-5">
-                       <span className="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[10px] uppercase font-bold tracking-wider px-2 py-1 rounded-md flex items-center gap-1 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
-                         <Sparkles size={10} /> Pro
+                     <div className="absolute right-4 top-4">
+                       <span className="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded flex items-center gap-1 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
+                         <BrainCircuit size={10} /> System 2 Active
                        </span>
                      </div>
                   )}
 
-                  <div className="flex items-center justify-between p-3 border-t border-[#2a2a32] bg-[#15151a] rounded-b-2xl">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <button type="button" onClick={() => setFocusMode('All')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${focusMode === 'All' ? 'bg-[#2a2a32] text-gray-200 shadow-sm' : 'text-gray-500 hover:bg-[#1c1c21]'}`}>
-                        <Globe size={14} /> All
+                  <div className="flex items-center justify-between p-3 border-t border-[#2a2a32]/50 bg-[#0a0a0c]/80 rounded-b-2xl">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button type="button" onClick={() => setFocusMode('All')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'All' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
+                        <Globe size={13} /> Global Logic
                       </button>
-                      <button type="button" onClick={() => setFocusMode('Academic')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${focusMode === 'Academic' ? 'bg-[#2a2a32] text-gray-200 shadow-sm' : 'text-gray-500 hover:bg-[#1c1c21]'}`}>
-                        <BookOpen size={14} /> Academic
+                      <button type="button" onClick={() => setFocusMode('Academic')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'Academic' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
+                        <BookOpen size={13} /> Deep Research
                       </button>
-                      <button type="button" onClick={() => setFocusMode('Writing')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${focusMode === 'Writing' ? 'bg-[#2a2a32] text-gray-200 shadow-sm' : 'text-gray-500 hover:bg-[#1c1c21]'}`}>
-                        <PenTool size={14} /> Writing
-                      </button>
-                      <button type="button" onClick={() => setFocusMode('Web')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${focusMode === 'Web' ? 'bg-[#2a2a32] text-gray-200 shadow-sm' : 'text-gray-500 hover:bg-[#1c1c21]'}`}>
-                        <Search size={14} /> Web Only
+                      <button type="button" onClick={() => setFocusMode('Writing')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'Writing' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
+                        <PenTool size={13} /> Prose Agent
                       </button>
                     </div>
-                    <button
-                      type="submit"
-                      disabled={!input.trim() || isLoading}
-                      className="p-2 bg-indigo-500 text-white rounded-full hover:bg-indigo-400 disabled:opacity-40 disabled:bg-[#2a2a32] disabled:text-gray-500 transition-colors shadow-md"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
-                      </svg>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="hidden md:inline text-[10px] text-gray-600 font-mono">Press Enter ↵</span>
+                      <button
+                        type="submit"
+                        disabled={!input.trim() || isLoading}
+                        className="p-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-lg hover:bg-indigo-500/30 disabled:opacity-40 disabled:bg-[#2a2a32] disabled:border-transparent disabled:text-gray-600 transition-all"
+                      >
+                        <Search size={16} />
+                      </button>
+                    </div>
                   </div>
                 </form>
               </div>
 
-              {/* Quick suggestions */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 w-full max-w-4xl opacity-80 pt-4">
+              {/* Contextual Smart Chips */}
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-8 w-full max-w-4xl relative z-20">
                 {[
-                  { q: 'Latest developments in Quantum Computing', icon: <Search size={16}/> },
-                  { q: 'Draft an email negotiating a higher salary', icon: <PenTool size={16}/> },
-                  { q: 'Summarize local RAG PDFs about AI', icon: <FileText size={16}/> },
-                  { q: 'Analyze Q3 tech earnings reports', icon: <Globe size={16}/> }
+                  { q: '/execute python data_analysis.py', icon: <FileText size={12}/> },
+                  { q: '@research_agent compare OpenAI vs DeepSeek', icon: <Compass size={12}/> },
+                  { q: 'Convert this whiteboard to React components', icon: <BrainCircuit size={12}/> },
+                  { q: '#current_context Generate unit tests', icon: <Settings2 size={12}/> }
                 ].map(({q, icon}) => (
                   <button
+
                     key={q}
                     onClick={() => handleSubmit(undefined, q)}
-                    className="bg-[#1c1c21]/50 border border-[#2a2a32] hover:border-[#3a3a42] text-left p-3.5 rounded-xl text-xs text-gray-400 transition-all duration-200 flex flex-col gap-3 group hover:bg-[#25252b]"
+                    className="flex flex-col bg-[#111113] border border-[#2a2a32] hover:border-indigo-500/50 hover:bg-[#1a1a21] text-left p-4 rounded-xl text-xs text-gray-400 transition-all duration-300 group shadow-sm flex-1 min-w-[200px]"
                   >
-                    <span className="text-gray-600 group-hover:text-indigo-400 transition-colors shrink-0">{icon}</span>
-                    <span className="leading-snug">{q}</span>
+                    <div className="flex items-center gap-2 mb-2">
+                       <div className="p-1.5 rounded-md bg-[#1c1c21] text-indigo-400 group-hover:bg-indigo-500/10 group-hover:scale-110 transition-all">{icon}</div>
+                    </div>
+                    <span className="leading-snug text-[13px]">{q}</span>
                   </button>
                 ))}
               </div>
@@ -451,12 +460,19 @@ export default function Home() {
                                 <button
                                   onClick={() => handleReadAloud(message.id, message.content)}
                                   disabled={playingId !== null && playingId !== message.id}
-                                  className={`flex items-center gap-2 text-xs transition-colors border border-[#2a2a32] bg-[#1c1c21] px-3 py-1.5 rounded-full hover:border-[#3a3a42] disabled:opacity-40 ${playingId === message.id ? 'text-indigo-400 border-indigo-500/30' : 'text-gray-400 hover:text-gray-200'}`}
+                                  className={`flex items-center gap-2 text-xs transition-colors border border-[#2a2a32] bg-[#1c1c21] px-3 py-1.5 rounded-full hover:border-[#3a3a42] disabled:opacity-40 outline-none ${playingId === message.id ? 'text-indigo-400 border-indigo-500/30' : 'text-gray-400 hover:text-gray-200'}`}
                                 >
                                   <Volume2 size={13} />
                                   {playingId === message.id ? 'Playing…' : 'Speech'}
                                 </button>
-                                <span className="text-[10px] uppercase font-bold text-gray-600 tracking-wider ml-auto pr-2">
+                                <button
+                                  className="flex items-center gap-2 text-xs transition-colors border border-[#2a2a32] bg-[#1c1c21] px-3 py-1.5 rounded-full hover:border-indigo-500/50 hover:text-indigo-300 text-gray-400 outline-none"
+                                >
+                                  <GitBranch size={13} />
+                                  Branch
+                                </button>
+                                <span className="text-[10px] uppercase font-bold text-gray-600 tracking-wider ml-auto pr-2 flex items-center gap-1.5">
+                                  <Wand2 size={10} className="text-indigo-500/50" />
                                   {modelName} engine
                                 </span>
                               </div>
