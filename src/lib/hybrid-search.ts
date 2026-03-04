@@ -4,7 +4,7 @@
  * context stream, ranked by relevance and deduplicated by domain/source.
  */
 import { vectorSearch } from './vector-store';
-import { webSearch, type FocusMode } from './web-search';
+import { webSearch, generateSubQueries, type FocusMode, type WebResult } from './web-search';
 import type { FirestoreSource } from './schemas';
 
 export type UnifiedSource = FirestoreSource & {
@@ -32,16 +32,24 @@ export async function hybridSearch(
 
   try {
     // 1. Fire parallel searches (Local Vector + Live Web)
-    const [vectorResults, webResults] = await Promise.all([
-      // Only hit vector DB if not strictly 'Web' focus
-      focusMode !== 'Web' ? vectorSearch(query, 4) : Promise.resolve([]),
-      // Only hit web if not strictly 'Academic' (unless we implement academic web routing, which we did in webSearch)
-      webSearch(
-        query,
-        focusMode,
-        isProMode ? 6 : 3 // Pro gets more web results
-      ),
-    ]);
+    const vectorPromise = focusMode !== 'Web' ? vectorSearch(query, 4) : Promise.resolve([]);
+
+    let webPromise: Promise<WebResult[]>;
+    if (isProMode) {
+      // PRO MODE: LLM Decomposes into Sub-Queries before searching
+      webPromise = generateSubQueries(query).then(async (sqs) => {
+        const parallelSearches = sqs.map(sq => webSearch(sq, focusMode, 4));
+        const results = await Promise.all(parallelSearches);
+        // Flatten and deduplicate by URL across all subqueries
+        const map = new Map<string, WebResult>();
+        results.flat().forEach(r => map.set(r.url, r));
+        return Array.from(map.values()).sort((a,b) => b.score - a.score).slice(0, 10);
+      });
+    } else {
+      webPromise = webSearch(query, focusMode, 3);
+    }
+
+    const [vectorResults, webResults] = await Promise.all([vectorPromise, webPromise]);
 
     // 2. Format Vector Results
     vectorResults.forEach((res) => {

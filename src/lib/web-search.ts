@@ -77,14 +77,43 @@ export async function webSearch(
 
 /**
  * Generate 3 sub-queries for Pro Search (iterative decomposition).
- * Used to break complex questions into targeted sub-searches.
+ * Uses Groq LLaMA to break complex questions into targeted sub-searches.
  */
-export function generateSubQueries(query: string): string[] {
-  // Simple heuristic decomposition — in production this would call the LLM
+export async function generateSubQueries(query: string): Promise<string[]> {
+  const apiKey = process.env.GROQ_API_KEY;
   const cleaned = query.replace(/[?!.]$/, '').trim();
-  return [
-    cleaned,
-    `${cleaned} explained`,
-    `${cleaned} latest research 2024 2025`,
-  ];
+  const fallback = [cleaned, `${cleaned} explained`, `${cleaned} latest research`];
+
+  if (!apiKey) return fallback;
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [{
+          role: 'system',
+          content: 'You are an AI search query generator. Given a user query, output exactly 3 distinct, highly targeted web search queries that would help answer the question comprehensively. Output only the queries, one per line, without numbers or quotes.'
+        }, {
+          role: 'user',
+          content: query
+        }],
+        temperature: 0.3,
+        max_tokens: 100
+      })
+    });
+
+    if (!res.ok) return fallback;
+    const data = await res.json();
+    const text = data.choices[0]?.message?.content || '';
+    const lines = text.split('\n').map((l: string) => l.trim().replace(/^[-*•\\d.]\\s*/, '')).filter(Boolean);
+    return lines.length >= 3 ? lines.slice(0, 3) : fallback;
+  } catch (e) {
+    console.error('[SubQueries] Failed to generate subqueries via LLM', e);
+    return fallback;
+  }
 }
