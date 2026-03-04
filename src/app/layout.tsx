@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
+// removed Clerk due to missing production keys
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BrainCircuit } from 'lucide-react';
 
@@ -16,8 +16,35 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Perplexity Clone',
-  description: 'A Next.js 15 App Router knowledge interface',
+  title: 'ContextRiver — God-Tier AI Research Platform',
+  description: 'ContextRiver is an infinite-canvas AI research engine powered by hybrid vector search, multi-model LLM orchestration, and real-time web intelligence.',
+  keywords: ['AI', 'RAG', 'research', 'LLM', 'GPT', 'DeepSeek', 'knowledge graph', 'context window'],
+  authors: [{ name: 'ContextRiver Team' }],
+  robots: 'index, follow',
+  openGraph: {
+    title: 'ContextRiver — God-Tier AI Research Platform',
+    description: 'Infinite canvas AI engine with hybrid vector search and real-time web intelligence.',
+    url: 'https://contextriver.ai',
+    siteName: 'ContextRiver',
+    type: 'website',
+    locale: 'en_US',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'ContextRiver AI Platform',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ContextRiver — God-Tier AI Research Platform',
+    description: 'Infinite canvas AI engine with hybrid vector search and real-time web intelligence.',
+    images: ['/og-image.png'],
+  },
+  viewport: 'width=device-width, initial-scale=1',
+  themeColor: '#0e0e10',
 };
 
 export default function RootLayout({
@@ -26,7 +53,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
       <html lang="en">
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0e0e10]`}
@@ -38,20 +64,13 @@ export default function RootLayout({
                
                {/* User Auth Section built right into sidebar bottom */}
                <div className="p-4 border-t border-[#1e1e24] flex items-center justify-between">
-                  <SignedIn>
                     <div className="flex items-center gap-3">
-                      <UserButton appearance={{ elements: { userButtonAvatarBox: 'w-8 h-8 rounded-full' }}} />
+                      <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs shadow-md">ND</div>
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium">My Account</span>
-                        <span className="text-xs text-gray-400">Free Tier</span>
+                        <span className="text-sm font-medium">Developer Mode</span>
+                        <span className="text-xs text-gray-400">Pro Tier Active</span>
                       </div>
                     </div>
-                  </SignedIn>
-                  <SignedOut>
-                    <SignInButton mode="modal">
-                      <button className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors">Sign In</button>
-                    </SignInButton>
-                  </SignedOut>
                </div>
             </div>
 
@@ -65,8 +84,7 @@ export default function RootLayout({
                      </div>
                      RAG Clone
                   </div>
-                  <SignedIn><UserButton /></SignedIn>
-                  <SignedOut><SignInButton mode="modal"><span className="text-xs bg-indigo-500 px-3 py-1 rounded text-white cursor-pointer hover:bg-indigo-600 transition-colors">Sign In</span></SignInButton></SignedOut>
+                  <div className="text-xs bg-indigo-500 px-3 py-1 rounded text-white cursor-pointer hover:bg-indigo-600 transition-colors">Developer</div>
                 </div>
                 
                 {children}
@@ -74,6 +92,5 @@ export default function RootLayout({
           </div>
         </body>
       </html>
-    </ClerkProvider>
   );
 }

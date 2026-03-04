@@ -3,14 +3,17 @@ import React from 'react';
 
 import { Search, BookOpen, BrainCircuit, Globe, Volume2, FileText, Compass, PenTool, Sparkles, SlidersHorizontal, Settings2, GitBranch, Wand2 } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SourceCard } from '@/components/ui/SourceCard';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import type { FirestoreSource } from '@/lib/schemas';
+
+// Dynamic imports for heavy markdown parsing libraries - reduces initial JS bundle
+const ReactMarkdown = dynamic(() => import('react-markdown'), { ssr: false });
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 type Role = 'user' | 'assistant' | 'system';
 type Message = { id: string; role: Role; content: string; sources?: FirestoreSource[] };
@@ -345,9 +348,11 @@ export default function Home() {
                   <div className="flex items-center px-5 py-4 w-full">
                     <span className="text-indigo-400 font-mono text-sm mr-3 font-bold opacity-70">~</span>
                     <input
+                      id="canvas-search-input"
                       type="text"
                       className="w-full bg-transparent text-gray-100 placeholder:text-gray-600 outline-none text-[16px] font-sans"
                       placeholder="Type '/' for commands, '@' for agents, or natural language..."
+                      aria-label="Canvas search input — type queries, slash commands, or @agent mentions"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       disabled={isLoading}
@@ -365,13 +370,13 @@ export default function Home() {
 
                   <div className="flex items-center justify-between p-3 border-t border-[#2a2a32]/50 bg-[#0a0a0c]/80 rounded-b-2xl">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <button type="button" onClick={() => setFocusMode('All')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'All' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
+                      <button type="button" aria-label="Global Logic mode" onClick={() => setFocusMode('All')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'All' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
                         <Globe size={13} /> Global Logic
                       </button>
-                      <button type="button" onClick={() => setFocusMode('Academic')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'Academic' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
+                      <button type="button" aria-label="Deep Research mode" onClick={() => setFocusMode('Academic')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'Academic' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
                         <BookOpen size={13} /> Deep Research
                       </button>
-                      <button type="button" onClick={() => setFocusMode('Writing')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'Writing' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
+                      <button type="button" aria-label="Prose Agent mode" onClick={() => setFocusMode('Writing')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'Writing' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
                         <PenTool size={13} /> Prose Agent
                       </button>
                     </div>
@@ -379,6 +384,7 @@ export default function Home() {
                       <span className="hidden md:inline text-[10px] text-gray-600 font-mono">Press Enter ↵</span>
                       <button
                         type="submit"
+                        aria-label="Submit search query"
                         disabled={!input.trim() || isLoading}
                         className="p-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-lg hover:bg-indigo-500/30 disabled:opacity-40 disabled:bg-[#2a2a32] disabled:border-transparent disabled:text-gray-600 transition-all"
                       >
@@ -398,8 +404,8 @@ export default function Home() {
                   { q: '#current_context Generate unit tests', icon: <Settings2 size={12}/> }
                 ].map(({q, icon}) => (
                   <button
-
                     key={q}
+                    aria-label={`Quick query: ${q}`}
                     onClick={() => handleSubmit(undefined, q)}
                     className="flex flex-col bg-[#111113] border border-[#2a2a32] hover:border-indigo-500/50 hover:bg-[#1a1a21] text-left p-4 rounded-xl text-xs text-gray-400 transition-all duration-300 group shadow-sm flex-1 min-w-[200px]"
                   >

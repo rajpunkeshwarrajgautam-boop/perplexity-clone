@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { BookOpen } from 'lucide-react';
 import type { FirestoreSource } from '@/lib/schemas';
 
@@ -23,13 +24,13 @@ export const SourceCard = React.memo(({ source, index }: SourceCardProps) => {
 
       <div className="flex items-center gap-2 pr-6">
         {isWeb && source.favicon ? (
-          <img
+          <Image
             src={source.favicon}
-            alt={source.domain || 'Favicon'}
+            alt={`${source.domain || 'Source'} favicon`}
+            width={16}
+            height={16}
+            unoptimized
             className="w-4 h-4 rounded-sm"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjODE4MThkIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik00LjUgMTYuNWMyLTQuNSAzLTIuNSAzLTEuNSAxIDEgMSAzIDMgNG0tNy41LTYuNWMtMiA0LjUtMyAyLjUtMyAxLjUtMS0xLTEtMy0zLTRtMyA3LjVjMCA0LjUuNSAyLjUtLjUgMS41LTEtMS0zLTEtNC0zIi8+PC9zdmc+'; // Gray generic web icon
-            }}
           />
         ) : (
           <BookOpen size={14} className="text-gray-500" />
@@ -45,7 +46,7 @@ export const SourceCard = React.memo(({ source, index }: SourceCardProps) => {
 
       {source.snippet && (
         <p className="text-[12px] text-gray-400 line-clamp-2 mt-0.5 leading-snug font-sans">
-          "{source.snippet}"
+          &ldquo;{source.snippet}&rdquo;
         </p>
       )}
 
