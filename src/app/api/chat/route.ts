@@ -51,7 +51,7 @@ export async function POST(req: Request): Promise<Response> {
     'sonar': 'llama-3.1-8b-instant', // Simulated Sonar (fast/small)
     'gpt-4o': 'llama-3.3-70b-versatile', // Simulated Smart Model
     'claude-3-5-sonnet': 'llama-3.3-70b-versatile', // Simulated Smart Model
-    'grok-2': 'mixtral-8x7b-32768',
+    'deepseek-r1': 'deepseek-r1-distill-llama-70b',
   };
   const activeModel = modelMap[modelConfig?.modelName ?? 'sonar'] ?? 'llama-3.1-8b-instant';
 

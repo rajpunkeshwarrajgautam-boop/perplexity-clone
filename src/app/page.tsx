@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 
-import { Search, BookOpen, BrainCircuit, Globe, Volume2, ShieldAlert, FileText, Compass, PenTool, Sparkles, SlidersHorizontal, Settings2 } from 'lucide-react';
+import { Search, BookOpen, BrainCircuit, Globe, Volume2, FileText, Compass, PenTool, Sparkles, SlidersHorizontal, Settings2 } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SourceCard } from '@/components/ui/SourceCard';
 import { CopyButton } from '@/components/ui/CopyButton';
 import { CodeBlock } from '@/components/ui/CodeBlock';
-import type { Components } from 'react-markdown';
 import type { FirestoreSource } from '@/lib/schemas';
 
 type Role = 'user' | 'assistant' | 'system';
@@ -47,7 +46,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [focusMode, setFocusMode] = useState<'All' | 'Academic' | 'Writing' | 'Web'>('All');
   const [isProSearch, setIsProSearch] = useState(false);
-  const [modelName, setModelName] = useState<'sonar' | 'gpt-4o' | 'claude-3-5-sonnet' | 'grok-2'>('sonar');
+  const [modelName, setModelName] = useState<'sonar' | 'gpt-4o' | 'claude-3-5-sonnet' | 'deepseek-r1'>('sonar');
   const [showSettings, setShowSettings] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
 
@@ -174,8 +173,10 @@ export default function Home() {
   }, [playingId]);
 
   /** Custom react-markdown component map for syntax-highlighted code blocks + citations */
-  const markdownComponents: Components = {
-    code({ className, children, ...props }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const markdownComponents: any = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    code({ className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
       const codeContent = String(children).replace(/\n$/, '');
       const isBlock = codeContent.includes('\n') || match;
@@ -192,8 +193,24 @@ export default function Home() {
         </code>
       );
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    think({ children }: any) {
+      return (
+        <details className="mb-6 bg-[#111113] border border-[#2a2a32] rounded-xl overflow-hidden [&_summary::-webkit-details-marker]:hidden shadow-inner group">
+          <summary className="px-4 py-2.5 text-xs font-semibold text-gray-400 cursor-pointer hover:bg-[#1c1c21] transition-colors flex items-center gap-2 uppercase tracking-wide select-none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400 group-open:hidden transition-transform"><circle cx="12" cy="12" r="10"/><path d="m12 16 4-4-4-4"/><path d="M8 12h8"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400 hidden group-open:block transition-transform"><circle cx="12" cy="12" r="10"/><path d="m16 12-4 4-4-4"/><path d="M12 8v8"/></svg>
+            Thought Process
+          </summary>
+          <div className="px-4 pb-4 pt-3 text-[14px] text-gray-400 font-sans border-t border-[#2a2a32]/50 italic leading-relaxed whitespace-pre-wrap">
+            {children}
+          </div>
+        </details>
+      );
+    },
     // Intercept [1], [2] brackets to render them as citation badges
-    p({ children }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    p({ children }: any) {
       const modifiedChildren = React.Children.map(children, child => {
         if (typeof child === 'string') {
           return child.split(/(\[\d+\])/g).map((part, i) => {
@@ -249,11 +266,11 @@ export default function Home() {
                         { id: 'sonar', label: 'Sonar', tag: 'Fast' },
                         { id: 'gpt-4o', label: 'GPT-4o', tag: 'Smart' },
                         { id: 'claude-3-5-sonnet', label: 'Claude 3.5', tag: 'Sonnet' },
-                        { id: 'grok-2', label: 'Grok-2', tag: 'X' },
+                        { id: 'deepseek-r1', label: 'DeepSeek R1', tag: 'Reasoning' },
                       ].map(model => (
                         <button
                           key={model.id}
-                          onClick={() => setModelName(model.id as any)}
+                          onClick={() => setModelName(model.id as 'sonar' | 'gpt-4o' | 'claude-3-5-sonnet' | 'deepseek-r1')}
                           className={`flex items-center justify-between p-3 rounded-xl border text-sm transition-all ${modelName === model.id ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-200' : 'bg-[#15151a] border-[#2a2a32] text-gray-400 hover:border-gray-600'}`}
                         >
                           <span className="font-medium">{model.label}</span>
@@ -420,7 +437,8 @@ export default function Home() {
                               <ReactMarkdown
                                 remarkPlugins={[remarkGfm]}
                                 rehypePlugins={[rehypeRaw]}
-                                components={markdownComponents}
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                components={markdownComponents as any}
                               >
                                 {message.content}
                               </ReactMarkdown>
