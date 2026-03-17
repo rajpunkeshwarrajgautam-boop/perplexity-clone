@@ -2,10 +2,10 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { 
-  Search, BookOpen, BrainCircuit, Globe, Volume2, 
-  FileText, Compass, PenTool, Sparkles, SlidersHorizontal, 
-  Settings2, GitBranch, Wand2, Network 
+import {
+  Search, BookOpen, BrainCircuit, Globe, Volume2,
+  Compass, Sparkles, SlidersHorizontal,
+  GitBranch, Wand2, Network, CheckCircle2, FileText
 } from 'lucide-react';
 import { LazyMotion, domMax, m as motion, AnimatePresence } from 'framer-motion';
 
@@ -56,6 +56,26 @@ export default function InfiniteCanvas() {
   const [modelName, setModelName] = useState<'llama-3.1-8b' | 'llama-3.3-70b' | 'mixtral-8x7b' | 'deepseek-r1'>('llama-3.1-8b');
   const [showSettings, setShowSettings] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [loaderIndex, setLoaderIndex] = useState(0);
+
+  const thinkLabels = [
+    "Aira is synthesizing sources...",
+    "Verifying claim provenance...",
+    "Spatial indexing knowledge graph...",
+    "Mapping cross-domain connections...",
+    "Synthesizing high-fidelity answer..."
+  ];
+
+  useEffect(() => {
+    if (isLoading) {
+      const interval = setInterval(() => {
+        setLoaderIndex((prev) => (prev + 1) % thinkLabels.length);
+      }, 2500);
+      return () => clearInterval(interval);
+    } else {
+      setLoaderIndex(0);
+    }
+  }, [isLoading, thinkLabels.length]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -170,7 +190,7 @@ export default function InfiniteCanvas() {
         {
           id: Date.now().toString(),
           role: 'assistant',
-          content: 'An error occurred while connecting to ROSE inference. Please try again.',
+          content: 'An error occurred while connecting to Aira inference. Please try again.',
         },
       ]);
     } finally {
@@ -201,28 +221,31 @@ export default function InfiniteCanvas() {
   return (
     <LazyMotion features={domMax}>
     <main className="flex-1 overflow-y-auto scrollbar-none relative">
-      {/* Background Dots Grid */}
       <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(#6366f1 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }} />
 
       <div className="max-w-5xl mx-auto px-6 py-12 relative z-10">
           
-          {/* Action Bar / Floating Trigger */}
           <div className="fixed bottom-8 right-8 z-50 flex flex-col gap-3">
             <button 
               onClick={() => setShowSettings(!showSettings)}
-              className="p-3 rounded-full bg-indigo-600 shadow-lg shadow-indigo-500/30 text-white hover:scale-110 active:scale-95 transition-all group"
+              className="p-3 rounded-full bg-amber-500 shadow-lg shadow-amber-500/30 text-black hover:scale-110 active:scale-95 transition-all group"
             >
               <SlidersHorizontal size={20} className={showSettings ? "rotate-180 transition-transform" : ""} />
-              <span className="absolute right-14 bg-black/80 text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Model Engine</span>
             </button>
-            
             <button 
-              onClick={() => handleSubmit(undefined, "Explain the latest AI trends [Pro]")}
-              className="p-3 rounded-full bg-purple-600 shadow-lg shadow-purple-500/30 text-white hover:scale-110 active:scale-95 transition-all group"
+              onClick={() => {}}
+              className="p-3 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-white hover:scale-110 active:scale-95 transition-all group"
+            >
+               <FileText size={20} />
+               <span className="absolute right-14 bg-black/80 text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Export Workspace</span>
+            </button>
+            <button 
+              onClick={() => handleSubmit(undefined, "Synthesize a deep analysis on the future of AGI")}
+              className="p-3 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white hover:scale-110 active:scale-95 transition-all group"
             >
               <Wand2 size={20} />
-              <span className="absolute right-14 bg-black/80 text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Surprise Me</span>
+               <span className="absolute right-14 bg-black/80 text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Autonomous Jumpstart</span>
             </button>
           </div>
 
@@ -249,7 +272,7 @@ export default function InfiniteCanvas() {
                         <button
                           key={model.id}
                           onClick={() => setModelName(model.id as 'llama-3.1-8b' | 'llama-3.3-70b' | 'mixtral-8x7b' | 'deepseek-r1')}
-                          className={`flex items-center justify-between p-3 rounded-xl border text-sm transition-all ${modelName === model.id ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-200' : 'bg-[#15151a] border-[#2a2a32] text-gray-400 hover:border-gray-600'}`}
+                          className={`flex items-center justify-between p-3 rounded-xl border text-sm transition-all ${modelName === model.id ? 'bg-amber-500/10 border-amber-500/50 text-amber-200' : 'bg-[#15151a] border-[#2a2a32] text-gray-400 hover:border-gray-600'}`}
                         >
                           <span className="font-medium">{model.label}</span>
                           <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-md bg-black/40 text-gray-500">{model.tag}</span>
@@ -264,10 +287,10 @@ export default function InfiniteCanvas() {
                     </h4>
                     <label className="flex items-center justify-between p-3 rounded-xl border border-[#2a2a32] bg-[#15151a] cursor-pointer hover:border-gray-600 transition-colors">
                       <div className="flex flex-col">
-                        <span className="text-sm font-medium text-gray-200 flex items-center gap-2"><Sparkles size={14} className={isProSearch ? "text-indigo-400" : ""}/> Pro Search</span>
-                        <span className="text-[11px] text-gray-500 mt-1">Deep analysis, iterative multi-step queries</span>
+                        <span className="text-sm font-medium text-gray-200 flex items-center gap-2"><Sparkles size={14} className={isProSearch ? "text-amber-400" : ""}/> Pro Search</span>
+                        <span className="text-[11px] text-gray-500 mt-1">Deep analysis mode</span>
                       </div>
-                      <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors ${isProSearch ? 'bg-indigo-500' : 'bg-[#2a2a32]'}`} onClick={() => setIsProSearch(!isProSearch)}>
+                      <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors ${isProSearch ? 'bg-amber-500' : 'bg-[#2a2a32]'}`} onClick={() => setIsProSearch(!isProSearch)}>
                         <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isProSearch ? 'translate-x-2' : '-translate-x-2'}`} />
                       </div>
                     </label>
@@ -277,36 +300,61 @@ export default function InfiniteCanvas() {
             )}
           </AnimatePresence>
 
-          {/* ─── CANVAS EMPTY STATE ─── */}
           {messages.length === 0 && (
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col items-center justify-center pt-[15vh] w-full max-w-3xl mx-auto"
+              transition={{ duration: 0.5 }}
+              className="flex flex-col items-center justify-center pt-[10vh] w-full max-w-4xl mx-auto"
             >
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.03)_0%,rgba(14,14,16,0)_60%)] pointer-events-none" />
-              
-              <div className="text-center mb-8 relative z-10 w-full">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-mono tracking-widest uppercase mb-6">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-                  Infinite Canvas Active
+              <div className="text-center mb-10 w-full">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-mono tracking-widest uppercase mb-6">
+                  Knowledge Graph Engine Active
                 </div>
-                <h2 className="text-4xl md:text-5xl font-medium tracking-tight bg-clip-text text-transparent bg-linear-to-br from-white via-gray-200 to-gray-500 mb-4">
-                  Everything connected.
+                <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-8">
+                  Define your <span className="text-transparent bg-clip-text bg-linear-to-r from-amber-200 to-amber-500">Hypothesis.</span>
                 </h2>
+                <div className="flex gap-4 justify-center mb-10">
+                   <button 
+                     onClick={() => handleSubmit(undefined, "How will quantum computing disrupt current encryption standards?")}
+                     className="px-4 py-2 rounded-full bg-amber-500/5 border border-amber-500/20 text-amber-500/80 text-xs font-medium hover:bg-amber-500/10 transition-all"
+                   >
+                      Sample Research: Quantum Crypto →
+                   </button>
+                </div>
               </div>
 
-              <div className="w-full bg-[#111113]/80 backdrop-blur-xl rounded-2xl border border-[#2a2a32] shadow-2xl overflow-visible focus-within:border-indigo-500/50 focus-within:shadow-[0_0_30px_rgba(99,102,241,0.1)] transition-all duration-300 relative z-20 group">
+              {/* Research Staging Area */}
+              <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                 <div className="p-4 rounded-2xl bg-white/5 border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/[0.07] transition-all cursor-pointer group">
+                    <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                       <FileText size={20} />
+                    </div>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Drop PDF/Data</span>
+                 </div>
+                 <div className="p-4 rounded-2xl bg-white/5 border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/[0.07] transition-all cursor-pointer group">
+                    <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                       <Globe size={20} />
+                    </div>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Connect URL</span>
+                 </div>
+                 <div className="p-4 rounded-2xl bg-white/5 border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/[0.07] transition-all cursor-pointer group">
+                    <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                       <Network size={20} />
+                    </div>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Import Graph</span>
+                 </div>
+              </div>
+
+              <div className="w-full bg-[#111113]/80 backdrop-blur-xl rounded-2xl border border-white/5 shadow-2xl overflow-visible focus-within:border-amber-500/50 transition-all duration-300 relative z-20 group">
                 <form onSubmit={handleSubmit} className="flex flex-col relative w-full">
                   <div className="flex items-center px-5 py-4 w-full">
-                    <span className="text-indigo-400 font-mono text-sm mr-3 font-bold opacity-70">~</span>
+                    <span className="text-amber-500 font-mono text-sm mr-3 font-bold opacity-70">~</span>
                     <input
                       id="canvas-search-input"
                       type="text"
                       className="w-full bg-transparent text-gray-100 placeholder:text-gray-600 outline-none text-[16px] font-sans"
-                      placeholder="Type '/' for commands, '@' for agents, or natural language..."
-                      aria-label="Canvas search input — type queries, slash commands, or @agent mentions"
+                      placeholder="Type your hypothesis or research question..."
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       disabled={isLoading}
@@ -314,66 +362,28 @@ export default function InfiniteCanvas() {
                     />
                   </div>
                   
-                  {isProSearch && (
-                     <div className="absolute right-4 top-4">
-                       <span className="bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-[9px] uppercase font-bold tracking-wider px-2 py-1 rounded flex items-center gap-1 shadow-[0_0_10px_rgba(99,102,241,0.2)]">
-                         <BrainCircuit size={10} /> System 2 Active
-                       </span>
-                     </div>
-                  )}
-
                   <div className="flex items-center justify-between p-3 border-t border-[#2a2a32]/50 bg-[#0a0a0c]/80 rounded-b-2xl">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button type="button" aria-label="Global Logic mode" onClick={() => setFocusMode('All')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'All' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
-                        <Globe size={13} /> Global Logic
-                      </button>
-                      <button type="button" aria-label="Deep Research mode" onClick={() => setFocusMode('Academic')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'Academic' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
-                        <BookOpen size={13} /> Deep Research
-                      </button>
-                      <button type="button" aria-label="Prose Agent mode" onClick={() => setFocusMode('Writing')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'Writing' ? 'bg-[#2a2a32] text-gray-200' : 'text-gray-500 hover:bg-[#1c1c21] hover:text-gray-300'}`}>
-                        <PenTool size={13} /> Prose Agent
-                      </button>
-                    </div>
                     <div className="flex items-center gap-2">
-                      <span className="hidden md:inline text-[10px] text-gray-600 font-mono">Press Enter ↵</span>
-                      <button
-                        type="submit"
-                        aria-label="Submit search query"
-                        disabled={!input.trim() || isLoading}
-                        className="p-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-lg hover:bg-indigo-500/30 disabled:opacity-40 disabled:bg-[#2a2a32] disabled:border-transparent disabled:text-gray-600 transition-all"
-                      >
-                        <Search size={16} />
+                      <button type="button" onClick={() => setFocusMode('All')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'All' ? 'bg-[#2a2a32] text-amber-400' : 'text-gray-500 hover:bg-[#1c1c21]'}`}>
+                        <Globe size={13} className="inline mr-1"/> Global
+                      </button>
+                      <button type="button" onClick={() => setFocusMode('Academic')} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${focusMode === 'Academic' ? 'bg-[#2a2a32] text-amber-400' : 'text-gray-500 hover:bg-[#1c1c21]'}`}>
+                        <BookOpen size={13} className="inline mr-1"/> Academic
                       </button>
                     </div>
+                    <button
+                      type="submit"
+                      disabled={!input.trim() || isLoading}
+                      className="p-1.5 bg-amber-500 text-black rounded-lg hover:bg-amber-400 disabled:opacity-40 transition-all"
+                    >
+                      <Search size={16} />
+                    </button>
                   </div>
                 </form>
-              </div>
-
-              {/* Contextual Smart Chips */}
-              <div className="flex flex-wrap items-center justify-center gap-2 mt-8 w-full max-w-4xl relative z-20">
-                {[
-                  { q: '/execute python data_analysis.py', icon: <FileText size={12}/> },
-                  { q: '@research_agent compare OpenAI vs DeepSeek', icon: <Compass size={12}/> },
-                  { q: 'Convert this whiteboard to React components', icon: <BrainCircuit size={12}/> },
-                  { q: '#current_context Generate unit tests', icon: <Settings2 size={12}/> }
-                ].map(({q, icon}) => (
-                  <button
-                    key={q}
-                    aria-label={`Quick query: ${q}`}
-                    onClick={() => handleSubmit(undefined, q)}
-                    className="flex flex-col bg-[#111113] border border-[#2a2a32] hover:border-indigo-500/50 hover:bg-[#1a1a21] text-left p-4 rounded-xl text-xs text-gray-400 transition-all duration-300 group shadow-sm flex-1 min-w-[200px]"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                       <div className="p-1.5 rounded-md bg-[#1c1c21] text-indigo-400 group-hover:bg-indigo-500/10 group-hover:scale-110 transition-all">{icon}</div>
-                    </div>
-                    <span className="leading-snug text-[13px]">{q}</span>
-                  </button>
-                ))}
               </div>
             </motion.div>
           )}
 
-          {/* ─── MESSAGES ─── */}
           <AnimatePresence initial={false}>
             {messages.map((message, msgIdx) => {
               const isUser = message.role === 'user';
@@ -385,95 +395,96 @@ export default function InfiniteCanvas() {
                   key={message.id}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                   className={`flex flex-col gap-3 ${isUser ? 'items-end' : 'items-start'}`}
                 >
-                  {/* User bubble */}
                   {isUser && (
-                    <div className="text-gray-100 text-[20px] font-semibold max-w-[85%] self-end pt-10 pb-2 leading-tight">
+                    <div className="text-gray-100 text-[20px] font-semibold max-w-[85%] self-end pt-10 pb-2">
                       {message.content}
                     </div>
                   )}
 
-                  {/* Assistant Engine */}
                   {!isUser && (
                     <div className="flex gap-4 w-full">
                       <div className="flex flex-col gap-6 w-full min-w-0">
-                        {/* Source cards container */}
-                        {message.sources && message.sources.length > 0 && (
-                          <div className="flex flex-col gap-3 pb-3 border-b border-[#1e1e24]">
-                            <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
-                              {isProSearch && <Sparkles size={12} className="text-indigo-400"/>} Sources
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                              {message.sources.map((source, idx) => (
-                                <SourceCard key={idx} source={source} index={idx} />
-                              ))}
-                            </div>
+                        <div className="flex flex-col gap-2 w-full">
+                          <div className="flex items-center gap-3 mb-2">
+                             <div className="w-6 h-6 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                                <Sparkles size={14} className="text-amber-500" />
+                             </div>
+                             <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Aira Research Agent</span>
+                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-500 font-bold uppercase">
+                                <CheckCircle2 size={10} /> High Fidelity [98%]
+                             </div>
+                             <div className="ml-auto text-[10px] font-mono text-gray-600 uppercase tracking-tighter">
+                                PROVENANCE STACK v1.4
+                             </div>
                           </div>
-                        )}
 
-                        <div className="relative group/answer">
-                          <div className="prose prose-invert prose-p:leading-relaxed prose-pre:bg-[#111116] prose-pre:border prose-pre:border-[#2a2a32] prose-pre:rounded-xl max-w-none text-gray-200">
-                            {message.content.includes('<think>') ? (
-                              <div className="flex flex-col gap-4">
-                                <details className="group/think bg-[#1c1c21]/30 border border-[#2a2a32]/50 rounded-xl p-1 overflow-hidden transition-all duration-300">
-                                  <summary className="list-none flex items-center gap-2 p-3 cursor-pointer hover:bg-white/5 transition-colors font-mono text-xs text-indigo-300/70 select-none">
-                                    <BrainCircuit size={14} className="group-open/think:rotate-12 transition-transform" />
-                                    <span>Thought Process</span>
-                                    <div className="ml-auto w-4 h-4 rounded-full border border-current flex items-center justify-center opacity-40 group-open/think:rotate-180 transition-transform">
-                                      <Search size={8} />
+                          {message.sources && message.sources.length > 0 && (
+                            <div className="flex flex-col gap-3 pb-3 border-b border-[#1e1e24]">
+                              <h3 className="text-[11px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-2">
+                                Sources
+                              </h3>
+                              <div className="flex flex-wrap gap-2">
+                                {message.sources.map((source, idx) => (
+                                  <SourceCard key={idx} source={source} index={idx} />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="relative group/answer">
+                            <div className="prose prose-invert prose-p:leading-relaxed max-w-none text-gray-200">
+                              {message.content.includes('<think>') ? (
+                                <div className="flex flex-col gap-4">
+                                  <details open className="group/think bg-[#0a0c10] border border-white/5 rounded-xl p-1 shadow-inner">
+                                    <summary className="list-none flex items-center gap-2 p-3 cursor-pointer hover:bg-white/5 transition-colors font-mono text-[11px] text-amber-500 font-bold uppercase tracking-widest select-none">
+                                      <BrainCircuit size={14} />
+                                      <span>Autonomous Reasoning Trace</span>
+                                      <div className="ml-auto flex items-center gap-4 text-gray-600 text-[10px]">
+                                         <span className="flex items-center gap-1"><CheckCircle2 size={10} className="text-emerald-500"/> Plan Found</span>
+                                         <span className="flex items-center gap-1"><CheckCircle2 size={10} className="text-emerald-500"/> Sources Scanned</span>
+                                      </div>
+                                    </summary>
+                                    <div className="p-5 pt-2 text-[13px] leading-relaxed text-gray-400 font-mono italic border-t border-white/5 mt-1 bg-[#050508]/50 rounded-b-xl">
+                                      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                                        {message.content.match(/<think>([\s\S]*?)<\/think>/)?.[1] || ''}
+                                      </ReactMarkdown>
                                     </div>
-                                  </summary>
-                                  <div className="p-4 pt-0 text-[13px] leading-relaxed text-gray-500 font-mono italic border-t border-[#2a2a32]/30 mt-1">
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                                      {message.content.match(/<think>([\s\S]*?)<\/think>/)?.[1] || ''}
+                                  </details>
+                                  <div className="text-[16px] leading-7 assistant-content">
+                                    <ReactMarkdown 
+                                      remarkPlugins={[remarkGfm]} 
+                                      rehypePlugins={[rehypeRaw]}
+                                      components={{
+                                        code({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
+                                          const match = /language-(\w+)/.exec(className || '');
+                                          const codeContent = String(children).replace(/\n$/, '');
+                                          return !inline && match ? (
+                                            <CodeBlock language={match[1]} {...props}>{codeContent}</CodeBlock>
+                                          ) : (
+                                            <code className={className} {...props}>{children}</code>
+                                          );
+                                        }
+                                      }}
+                                    >
+                                      {message.content.replace(/<think>[\s\S]*?<\/think>/, '').trim()}
                                     </ReactMarkdown>
                                   </div>
-                                </details>
-                                <div className="text-[16px] leading-7 assistant-content">
-                                  <ReactMarkdown 
-                                    remarkPlugins={[remarkGfm]} 
-                                    rehypePlugins={[rehypeRaw]}
-                                    components={{
-                                      code({ inline, className, children, ...props }: any) {
-                                        const match = /language-(\w+)/.exec(className || '');
-                                        return !inline && match ? (
-                                          <CodeBlock
-                                            language={match[1]}
-                                            value={String(children).replace(/\n$/, '')}
-                                            {...props}
-                                          />
-                                        ) : (
-                                          <code className={className} {...props}>
-                                            {children}
-                                          </code>
-                                        );
-                                      }
-                                    }}
-                                  >
-                                    {message.content.replace(/<think>[\s\S]*?<\/think>/, '').trim()}
-                                  </ReactMarkdown>
                                 </div>
-                              </div>
-                            ) : (
+                              ) : (
                                 <div className="text-[16px] leading-7 assistant-content">
                                   <ReactMarkdown 
                                     remarkPlugins={[remarkGfm]} 
                                     rehypePlugins={[rehypeRaw]}
                                     components={{
-                                      code({ inline, className, children, ...props }: any) {
+                                      code({ inline, className, children, ...props }: { inline?: boolean; className?: string; children?: React.ReactNode }) {
                                         const match = /language-(\w+)/.exec(className || '');
+                                        const codeContent = String(children).replace(/\n$/, '');
                                         return !inline && match ? (
-                                          <CodeBlock
-                                            language={match[1]}
-                                            value={String(children).replace(/\n$/, '')}
-                                            {...props}
-                                          />
+                                          <CodeBlock language={match[1]} {...props}>{codeContent}</CodeBlock>
                                         ) : (
-                                          <code className={className} {...props}>
-                                            {children}
-                                          </code>
+                                          <code className={className} {...props}>{children}</code>
                                         );
                                       }
                                     }}
@@ -481,48 +492,34 @@ export default function InfiniteCanvas() {
                                     {message.content}
                                   </ReactMarkdown>
                                 </div>
-                            )}
-                          </div>
-                          
-                          {/* Answer Action Bar */}
-                          <div className="flex items-center gap-1 mt-6 opacity-0 group-hover/answer:opacity-100 transition-opacity">
-                            <CopyButton text={message.content} />
-                            <button 
-                              onClick={() => handleReadAloud(message.id, message.content)}
-                              className={`p-1.5 rounded-lg hover:bg-[#1c1c21] text-gray-500 hover:text-gray-300 transition-all ${playingId === message.id ? 'text-indigo-400 animate-pulse' : ''}`}
-                              title="Read aloud"
-                            >
-                              <Volume2 size={16} />
-                            </button>
-                            <button className="p-1.5 rounded-lg hover:bg-[#1c1c21] text-gray-500 hover:text-gray-300 transition-all" title="View Source Graph">
-                              <Network size={16} />
-                            </button>
-                            <button className="p-1.5 rounded-lg hover:bg-[#1c1c21] text-gray-500 hover:text-gray-300 transition-all font-mono text-[10px] px-2" title="Create Private Branch">
-                              + Branch
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Follow up suggestions */}
-                        {followUps.length > 0 && (
-                          <div className="pt-4 border-t border-[#1e1e24]/50 flex flex-col gap-3">
-                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-600 flex items-center gap-2">
-                              <GitBranch size={12} className="rotate-90"/> Related Pathways
-                            </h4>
-                            <div className="flex flex-col gap-2">
-                              {followUps.map((q, idx) => (
-                                <button 
-                                  key={idx}
-                                  onClick={() => handleSubmit(undefined, q)}
-                                  className="text-left text-sm py-2 px-3 rounded-lg border border-[#2a2a32] hover:border-indigo-500/30 hover:bg-[#1c1c21] transition-all group flex items-center justify-between"
-                                >
-                                  <span className="text-gray-400 group-hover:text-gray-200">{q}</span>
-                                  <SlidersHorizontal size={12} className="text-gray-600 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
-                                </button>
-                              ))}
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-1 mt-6 opacity-0 group-hover/answer:opacity-100 transition-opacity">
+                              <CopyButton text={message.content} />
+                              <button onClick={() => handleReadAloud(message.id, message.content)} className={`p-1.5 rounded-lg hover:bg-[#1c1c21] text-gray-500 ${playingId === message.id ? 'text-amber-400' : ''}`}>
+                                <Volume2 size={16} />
+                              </button>
+                              <button className="p-1.5 rounded-lg hover:bg-[#1c1c21] text-gray-500">
+                                <Network size={16} />
+                              </button>
                             </div>
                           </div>
-                        )}
+
+                          {followUps.length > 0 && (
+                            <div className="pt-4 border-t border-[#1e1e24]/50 flex flex-col gap-3">
+                              <h4 className="text-[11px] font-bold uppercase tracking-wider text-gray-600">Related Pathways</h4>
+                              <div className="flex flex-col gap-2">
+                                {followUps.map((q, idx) => (
+                                  <button key={idx} onClick={() => handleSubmit(undefined, q)} className="text-left text-sm py-2 px-3 rounded-lg border border-[#2a2a32] hover:border-amber-500/30 hover:bg-[#1c1c21] group flex items-center justify-between transition-all">
+                                    <span className="text-gray-400 group-hover:text-amber-200">{q}</span>
+                                    <ArrowRight size={12} className="text-amber-500 opacity-0 group-hover:opacity-100 transition-all" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -532,13 +529,12 @@ export default function InfiniteCanvas() {
           </AnimatePresence>
 
           {isLoading && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3 py-10"
-            >
-              <div className="w-5 h-5 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-              <p className="text-sm font-mono text-gray-500 animate-pulse">Aira is thinking...</p>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4 py-10">
+              <div className="w-5 h-5 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin shadow-[0_0_10px_rgba(245,158,11,0.2)]" />
+              <div className="flex flex-col">
+                <p className="text-sm font-mono text-gray-400 font-bold uppercase tracking-wider">{thinkLabels[loaderIndex]}</p>
+                <p className="text-[10px] font-mono text-gray-600">Autonomous Reasoning Engine Active</p>
+              </div>
             </motion.div>
           )}
 
@@ -548,3 +544,9 @@ export default function InfiniteCanvas() {
     </LazyMotion>
   );
 }
+
+const ArrowRight = ({ size, className }: { size: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M5 12h14m-7-7 7 7-7 7" />
+  </svg>
+);

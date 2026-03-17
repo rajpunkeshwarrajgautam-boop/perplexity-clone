@@ -2,16 +2,30 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #0e0e10;
+  --background: #050508;
   --foreground: #ededed;
-  --indigo-500: #6366f1;
+  --surface: #0a0c10;
+  --surface-lighter: #11141a;
+  --border: #1e1e24;
+  --accent-amber: #f59e0b;
+  --accent-amber-glow: rgba(245, 158, 11, 0.15);
+  --accent-indigo: #6366f1;
+  --accent-indigo-glow: rgba(99, 102, 241, 0.15);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-lighter: var(--surface-lighter);
+  --color-accent-amber: var(--accent-amber);
+  --color-accent-indigo: var(--accent-indigo);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 * {
