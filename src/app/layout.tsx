@@ -15,16 +15,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ContextRiver — God-Tier AI Research Platform',
-  description: 'ContextRiver is an infinite-canvas AI research engine powered by hybrid vector search, multi-model LLM orchestration, and real-time web intelligence.',
+  title: 'Aira — God-Tier AI Research Platform',
+  description: 'Aira is an infinite-canvas AI research engine powered by hybrid vector search, multi-model LLM orchestration, and real-time web intelligence.',
   keywords: ['AI', 'RAG', 'research', 'LLM', 'GPT', 'DeepSeek', 'knowledge graph', 'context window'],
-  authors: [{ name: 'ContextRiver Team' }],
+  authors: [{ name: 'Aira Team' }],
   robots: 'index, follow',
   openGraph: {
-    title: 'ContextRiver — God-Tier AI Research Platform',
+    title: 'Aira — God-Tier AI Research Platform',
     description: 'Infinite canvas AI engine with hybrid vector search and real-time web intelligence.',
-    url: 'https://contextriver.ai',
-    siteName: 'ContextRiver',
+    url: 'https://aira.ai',
+    siteName: 'Aira',
     type: 'website',
     locale: 'en_US',
     images: [
@@ -32,13 +32,13 @@ export const metadata: Metadata = {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'ContextRiver AI Platform',
+        alt: 'Aira AI Platform',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ContextRiver — God-Tier AI Research Platform',
+    title: 'Aira — God-Tier AI Research Platform',
     description: 'Infinite canvas AI engine with hybrid vector search and real-time web intelligence.',
     images: ['/og-image.png'],
   },
@@ -85,7 +85,7 @@ export default function RootLayout({
                      <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                        <BrainCircuit size={14} className="text-white" />
                      </div>
-                     RAG Clone
+                     Aira
                   </div>
                   <div className="text-xs bg-indigo-500 px-3 py-1 rounded text-white cursor-pointer hover:bg-indigo-600 transition-colors">Developer</div>
                 </div>

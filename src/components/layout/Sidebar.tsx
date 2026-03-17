@@ -21,7 +21,7 @@ export function Sidebar({ isMobile = false }) {
         <div className="w-8 h-8 rounded-lg bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.4)]">
           <BrainCircuit size={18} className="text-white" />
         </div>
-        <h1 className="font-bold text-[18px] tracking-tight bg-clip-text text-transparent bg-linear-to-r from-gray-100 to-gray-400">Context<span className="font-light">River</span></h1>
+        <h1 className="font-bold text-[18px] tracking-tight bg-clip-text text-transparent bg-linear-to-r from-gray-100 to-gray-400">Aira</h1>
       </div>
 
       <div className="px-4 mb-6">

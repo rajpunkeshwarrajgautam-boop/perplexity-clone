@@ -5,7 +5,7 @@ import { MetadataRoute } from 'next';
  * @description Generates the XML sitemap for ContextRiver.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://contextriver.ai';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://aira.ai';
   return [
     {
       url: baseUrl,

@@ -538,7 +538,7 @@ export default function InfiniteCanvas() {
               className="flex items-center gap-3 py-10"
             >
               <div className="w-5 h-5 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-              <p className="text-sm font-mono text-gray-500 animate-pulse">ContextRiver is thinking...</p>
+              <p className="text-sm font-mono text-gray-500 animate-pulse">Aira is thinking...</p>
             </motion.div>
           )}
 

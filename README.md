@@ -1,4 +1,4 @@
-# ContextRiver — God-Tier AI Research Platform
+# Aira — God-Tier AI Research Platform
 
 > An infinite-canvas AI engine powered by hybrid vector search, multi-model LLM orchestration, and real-time web intelligence.
 
