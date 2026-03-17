@@ -1,7 +1,6 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-// removed Clerk due to missing production keys
 import { Sidebar } from '@/components/layout/Sidebar';
 import { BrainCircuit } from 'lucide-react';
 
@@ -43,7 +42,11 @@ export const metadata: Metadata = {
     description: 'Infinite canvas AI engine with hybrid vector search and real-time web intelligence.',
     images: ['/og-image.png'],
   },
-  viewport: 'width=device-width, initial-scale=1',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
   themeColor: '#0e0e10',
 };
 
