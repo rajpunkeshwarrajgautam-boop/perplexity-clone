@@ -2,7 +2,7 @@
 
 import React from 'react';
 import NextImage from 'next/image';
-import { m as motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { 
   BrainCircuit, Sparkles, Shield, 
   Search, Network, 
@@ -27,10 +27,6 @@ const FeatureCard = ({ icon: Icon, title, description, delay = 0 }: { icon: Luci
 );
 
 export function AiraLanding({ onEnterApp }: { onEnterApp: () => void }) {
-  const { scrollYProgress } = useScroll();
-  const yScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
-  const opacity = useTransform(scrollYProgress, [0, 0.1], [1, 0]);
-
   const capabilities = [
     {
       icon: Search,
@@ -74,15 +70,18 @@ export function AiraLanding({ onEnterApp }: { onEnterApp: () => void }) {
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar-none bg-[#050508]">
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden">
+      {/* Hero Section: Split Screen */}
+      <section className="relative min-h-[90vh] flex flex-col md:flex-row items-center justify-between px-6 md:px-20 py-20 overflow-hidden">
          {/* Atmospheric Background Crystals */}
-         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 blur-[120px] rounded-full" />
-         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/5 blur-[120px] rounded-full" />
+         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 blur-[120px] rounded-full -z-10" />
+         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/5 blur-[120px] rounded-full -z-10" />
          
+         {/* Left Side: Headline + CTA */}
          <motion.div 
-           style={{ scale: yScale, opacity }}
-           className="z-10 text-center max-w-4xl"
+           initial={{ opacity: 0, x: -50 }}
+           animate={{ opacity: 1, x: 0 }}
+           transition={{ duration: 0.8 }}
+           className="flex-1 z-10 text-left max-w-2xl mb-12 md:mb-0"
          >
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
@@ -97,109 +96,177 @@ export function AiraLanding({ onEnterApp }: { onEnterApp: () => void }) {
               <div className="text-gray-400 lowercase italic font-normal">build_0428 active</div>
             </motion.div>
             
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.1]">
-              Research, <span className="text-transparent bg-clip-text bg-linear-to-r from-amber-200 to-amber-500">Connected.</span>
+            <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white mb-8 leading-[0.85]">
+               Synthesize <br />
+               <span className="text-transparent bg-clip-text bg-linear-to-r from-amber-200 to-amber-500">PhD-Level Depth.</span>
             </h1>
             
-            <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-              The infinite-canvas AI engine for researchers who need depth. 
-              Synthesize 1,000+ sources into a single spatial knowledge graph.
+            <p className="text-xl text-gray-400 mb-10 leading-relaxed max-w-xl">
+              Research is broken by information fragmentation. Aira is the first <span className="text-white font-medium">Infinite Knowledge Canvas</span> designed for PhD-level depth and industrial intelligence.
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-wrap gap-4">
                <button 
                  onClick={onEnterApp}
-                 className="px-8 py-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] flex items-center gap-2 group"
+                 className="px-8 py-4 rounded-full bg-amber-500 text-black font-bold flex items-center gap-2 hover:bg-amber-400 hover:scale-105 active:scale-95 transition-all shadow-[0_0_40px_rgba(245,158,11,0.2)]"
                >
-                 Try the Infinite Canvas
-                 <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                 Launch Canvas <ArrowRight size={18} />
                </button>
-               <button className="px-8 py-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold text-lg transition-all flex items-center gap-2">
-                 Watch the Tour
-                 <Play size={18} />
+               <button className="px-8 py-4 rounded-full bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all">
+                 Request Demo
                </button>
+            </div>
+
+            {/* Trust Signals / Social Proof */}
+            <div className="mt-16 pt-8 border-t border-white/5">
+                <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-bold mb-6">Trusted by Researchers at</p>
+                <div className="flex items-center gap-8 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all">
+                   <span className="text-sm font-black text-white">MIT</span>
+                   <span className="text-sm font-black text-white">DEEPMIND</span>
+                   <span className="text-sm font-black text-white">UPENN</span>
+                   <span className="text-sm font-black text-white">STAMFORD</span>
+                </div>
             </div>
          </motion.div>
 
-         {/* Hero Preview Card (The Demo Widget Placeholder) */}
+         {/* Right Side: Visual Demo */}
          <motion.div
-           initial={{ opacity: 0, y: 40 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.2 }}
-           className="mt-20 w-full max-w-6xl rounded-3xl border border-white/5 bg-[#0a0c10]/50 backdrop-blur-3xl shadow-2xl relative group overflow-hidden"
+           initial={{ opacity: 0, x: 50, scale: 0.9 }}
+           animate={{ opacity: 1, x: 0, scale: 1 }}
+           transition={{ duration: 1, delay: 0.2 }}
+           className="flex-1 relative w-full flex items-center justify-center md:-mr-20"
          >
-            <div className="absolute inset-0 bg-linear-to-b from-amber-500/5 to-transparent pointer-events-none z-10" />
-            <div className="p-3 border-b border-white/5 flex items-center justify-between px-6 bg-black/20">
-               <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-500/20" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20" />
-               </div>
-               <div className="text-[10px] text-gray-500 font-mono tracking-[0.3em] uppercase">aira_environment_v2.0_stable</div>
-               <div className="flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                  <div className="text-[10px] text-emerald-500/80 font-mono">SYSTEM_2_ACTIVE</div>
-               </div>
-            </div>
-            <div className="relative aspect-video w-full overflow-hidden">
-               <NextImage 
-                 src="/aira_hero_mockup.png" 
-                 alt="Aira Infinite Canvas Preview" 
-                 fill
-                 className="object-cover opacity-90 group-hover:scale-[1.02] transition-transform duration-700"
-                 priority
-               />
-               <div className="absolute inset-0 bg-linear-to-t from-[#050508] via-transparent to-transparent" />
-               
-               {/* Quick Feature Overlays */}
-               <div className="absolute bottom-10 left-10 flex gap-4 z-20">
-                  <div className="px-4 py-2 rounded-xl bg-black/60 border border-white/10 backdrop-blur-md text-[10px] font-mono text-gray-300">
-                     LATENCY: 42MS
-                  </div>
-                  <div className="px-4 py-2 rounded-xl bg-black/60 border border-amber-500/20 backdrop-blur-md text-[10px] font-mono text-amber-500 font-bold">
-                     REASONING: MULTI-STAGE
-                  </div>
-               </div>
+            <div className="relative w-full aspect-video rounded-3xl border border-white/5 bg-[#0a0c10]/50 backdrop-blur-3xl shadow-2xl overflow-hidden group">
+                <div className="absolute inset-0 bg-linear-to-b from-amber-500/5 to-transparent pointer-events-none z-10" />
+                <div className="p-3 border-b border-white/5 flex items-center justify-between px-6 bg-black/20">
+                   <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/20" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20" />
+                   </div>
+                   <div className="text-[10px] text-gray-500 font-mono tracking-[0.3em] uppercase">environment_v2.0_stable</div>
+                </div>
+                <div className="relative h-full w-full min-h-[400px]">
+                   <NextImage 
+                     src="/aira_hero_mockup.png" 
+                     alt="Aira Infinite Canvas Preview" 
+                     fill
+                     className="object-cover opacity-80 group-hover:scale-[1.05] transition-transform duration-[3s]"
+                     priority
+                   />
+                   <div className="absolute inset-0 bg-linear-to-t from-[#050508]/80 via-transparent to-transparent" />
+                   
+                   {/* Dynamic Overlay Elements */}
+                   <motion.div 
+                     animate={{ y: [0, -10, 0] }}
+                     transition={{ duration: 4, repeat: Infinity }}
+                     className="absolute bottom-1/4 right-1/4 p-4 rounded-xl bg-black/60 border border-white/10 backdrop-blur-md z-20 shadow-2xl"
+                   >
+                       <div className="flex items-center gap-3">
+                          <Network size={16} className="text-amber-500" />
+                          <div className="flex flex-col">
+                             <span className="text-[10px] font-bold text-white uppercase tracking-tighter">Linking Sources</span>
+                             <div className="w-24 h-1 bg-white/10 rounded-full mt-1 overflow-hidden">
+                                <motion.div 
+                                  animate={{ x: ['-100%', '100%'] }}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                  className="w-full h-full bg-amber-500"
+                                />
+                             </div>
+                          </div>
+                       </div>
+                   </motion.div>
+                </div>
             </div>
          </motion.div>
       </section>
 
-      {/* Problem Section */}
-      <section className="py-32 px-6 border-t border-white/5 relative bg-[#0a0c10]/30">
-         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-20 items-center">
-            <div>
-               <h2 className="text-4xl font-bold text-white mb-6 leading-tight uppercase tracking-tighter">
-                  Research is <span className="text-red-500">Broken.</span>
-               </h2>
-               <div className="space-y-6">
-                  {[
-                    "Standard chats lose context after 2 questions.",
-                    "Citation tracking is a manual nightmare.",
-                    "Information is scattered across 50 tabs.",
-                    "Synthesis is linear, while knowledge is spatial."
-                  ].map((text, i) => (
-                    <div key={i} className="flex items-start gap-4">
-                       <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500" />
-                       <p className="text-gray-400 text-lg">{text}</p>
-                    </div>
-                  ))}
-               </div>
+      {/* Why Section: The Problem Statement */}
+      <section className="py-24 px-6 bg-[#050508] relative">
+         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
+            <div className="relative">
+                <div className="absolute -top-10 -left-10 text-[120px] font-black text-white/5 select-none leading-none">?</div>
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-8">Research is <span className="text-red-500/80">Broken.</span></h2>
+                <div className="space-y-6 text-gray-400 text-lg leading-relaxed">
+                   <p>Traditional AI tools are optimized for <span className="text-white italic">chat</span>, not for <span className="text-white italic">understanding</span>. They hallucinate, lack provenance, and lose the thread of deep investigation.</p>
+                   <p>Fragmentation across browser tabs, PDFs, and notes creates a cognitive tax that slows discovery.</p>
+                </div>
             </div>
-            <div className="p-8 rounded-3xl bg-linear-to-br from-indigo-500/5 to-transparent border border-white/5">
-               <h3 className="text-amber-500 font-mono text-sm uppercase tracking-widest mb-4">The Solution</h3>
-               <p className="text-2xl font-light text-gray-200 leading-relaxed mb-8">
-                  Aira treats research as a <span className="font-bold underline decoration-amber-500 underline-offset-8">graph</span>, not a chat log. We synthesize across domains in real-time.
-               </p>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-2">
-                     <span className="text-2xl font-bold text-white">10x</span>
-                     <span className="text-xs text-gray-500 uppercase">Faster Synthesis</span>
+            <div className="grid grid-cols-2 gap-4">
+                {[ 
+                   { label: "Hallucinated Citations", value: "62%", color: "text-red-400" },
+                   { label: "Lost Context", value: "90%", color: "text-amber-400" },
+                   { label: "Shadow Data", value: "75%", color: "text-indigo-400" },
+                   { label: "Research Tax", value: "4H/Day", color: "text-emerald-400" }
+                ].map((stat, i) => (
+                  <div key={i} className="p-6 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.07] transition-all">
+                     <span className={`text-3xl font-black ${stat.color} block mb-1`}>{stat.value}</span>
+                     <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-tight">{stat.label}</span>
                   </div>
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-2">
-                     <span className="text-2xl font-bold text-white">100%</span>
-                     <span className="text-xs text-gray-500 uppercase">Citation Fidelity</span>
-                  </div>
+                ))}
+            </div>
+         </div>
+      </section>
+
+      {/* Loom Feature Demo Section */}
+      <section className="py-24 px-6 md:px-20 bg-[#0a0c10]/30 border-y border-white/5">
+         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-20">
+            <div className="flex-1">
+               <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 mb-8">
+                  <Play size={24} />
                </div>
+               <h2 className="text-4xl font-bold text-white mb-6 tracking-tighter">See Aira in Action</h2>
+               <p className="text-lg text-gray-400 mb-8 leading-relaxed">
+                  Watch a 3-minute walk-through of how Aira transforms a disconnected research query into a structured Knowledge Graph with citation fidelity.
+               </p>
+               <button className="flex items-center gap-3 text-amber-500 font-bold uppercase tracking-widest text-[10px] group border-b border-amber-500/20 pb-1">
+                  Watch Full Demo <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+               </button>
+            </div>
+            <div className="flex-1 relative aspect-video w-full rounded-2xl bg-black border border-white/10 overflow-hidden shadow-2xl group cursor-pointer">
+                <div className="absolute inset-0 bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+                <div className="absolute inset-0 flex items-center justify-center z-20">
+                   <div className="w-16 h-16 rounded-full bg-amber-500 text-black flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                      <Play size={28} fill="currentColor" />
+                   </div>
+                </div>
+                <NextImage 
+                  src="/aira_hero_mockup.png" 
+                  alt="Aira Video Demo" 
+                  fill 
+                  className="object-cover opacity-40 grayscale group-hover:grayscale-0 transition-all duration-700" 
+                />
+            </div>
+         </div>
+      </section>
+
+      {/* Comparison Section: Aira vs Old Guards */}
+      <section className="py-32 px-6">
+         <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl md:text-5xl font-bold text-white text-center mb-20 tracking-tighter">
+               Engineered for <span className="text-amber-500 underline decoration-amber-500/30 underline-offset-8">High Stakes.</span>
+            </h2>
+            <div className="grid grid-cols-1 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-xl">
+               <div className="grid grid-cols-4 bg-white/5 p-6 border-b border-white/10 items-center text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                  <div className="col-span-1">Feature</div>
+                  <div className="text-center">Search Engines</div>
+                  <div className="text-center">Standard AI</div>
+                  <div className="text-center text-amber-500">Aira Platform</div>
+               </div>
+               {[
+                 { f: "Spatial Knowledge Graph", a: true, b: false, c: false },
+                 { f: "100% Citation Fidelity", a: true, b: false, c: false },
+                 { f: "Autonomous Agents", a: true, b: false, c: false },
+                 { f: "Industrial Use Cases", a: true, b: false, c: false },
+                 { f: "Real-time Synthesis", a: true, b: true, c: true },
+               ].map((row, i) => (
+                 <div key={i} className={`grid grid-cols-4 p-6 items-center text-sm ${i % 2 === 0 ? 'bg-white/2' : ''}`}>
+                    <div className="text-gray-300 font-medium">{row.f}</div>
+                    <div className="flex justify-center">{row.c ? <Shield size={16} className="text-emerald-500" /> : <div className="w-1.5 h-1.5 rounded-full bg-white/10" />}</div>
+                    <div className="flex justify-center">{row.b ? <Shield size={16} className="text-emerald-500" /> : <div className="w-1.5 h-1.5 rounded-full bg-white/10" />}</div>
+                    <div className="flex justify-center"><Shield size={18} className="text-amber-500 animate-pulse" /></div>
+                 </div>
+               ))}
             </div>
          </div>
       </section>
@@ -253,7 +320,7 @@ export function AiraLanding({ onEnterApp }: { onEnterApp: () => void }) {
       </section>
 
       {/* Social Proof Placeholder */}
-      <section className="py-20 border-y border-white/5 bg-white/[0.02]">
+      <section className="py-20 border-y border-white/5 bg-white/2">
          <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-10">
             <p className="text-gray-500 font-mono text-xs uppercase tracking-widest">Trusted by builders at</p>
             <div className="flex flex-wrap items-center gap-12 opacity-30 grayscale contrast-125">
@@ -278,6 +345,19 @@ export function AiraLanding({ onEnterApp }: { onEnterApp: () => void }) {
             &copy; 2026 Aira AI Platform. All rights reserved.
          </div>
       </footer>
+
+      {/* Floating Aira Interaction Widget */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 2 }}
+        className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-4"
+      >
+         <div className="px-4 py-3 rounded-2xl bg-amber-500 text-black text-xs font-bold shadow-2xl flex items-center gap-3 cursor-pointer hover:scale-105 active:scale-95 transition-all">
+            <Sparkles size={16} />
+            Ask Aira Anything...
+         </div>
+      </motion.div>
     </div>
   );
 }
