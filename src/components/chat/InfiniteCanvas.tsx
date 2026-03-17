@@ -311,40 +311,45 @@ export default function InfiniteCanvas() {
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-mono tracking-widest uppercase mb-6">
                   Knowledge Graph Engine Active
                 </div>
-                <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-8">
-                  Define your <span className="text-transparent bg-clip-text bg-linear-to-r from-amber-200 to-amber-500">Hypothesis.</span>
+                <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-8 leading-[0.9]">
+                  Define your <br />
+                  <span className="text-transparent bg-clip-text bg-linear-to-r from-amber-200 to-amber-500">Hypothesis.</span>
                 </h2>
-                <div className="flex gap-4 justify-center mb-10">
-                   <button 
-                     onClick={() => handleSubmit(undefined, "How will quantum computing disrupt current encryption standards?")}
-                     className="px-4 py-2 rounded-full bg-amber-500/5 border border-amber-500/20 text-amber-500/80 text-xs font-medium hover:bg-amber-500/10 transition-all"
-                   >
-                      Sample Research: Quantum Crypto →
-                   </button>
-                </div>
               </div>
 
-              {/* Research Staging Area */}
-              <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                 <div className="p-4 rounded-2xl bg-white/5 border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/[0.07] transition-all cursor-pointer group">
-                    <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
-                       <FileText size={20} />
+              {/* Research Staging Area (High Fidelity) */}
+              <div className="w-full max-w-2xl p-10 rounded-[2.5rem] border-2 border-dashed border-white/5 bg-white/1 hover:bg-white/3 transition-all group relative overflow-hidden mb-12">
+                 <div className="absolute inset-0 bg-linear-to-b from-amber-500/2 to-transparent pointer-events-none" />
+                 <div className="flex flex-col items-center gap-8 relative z-10">
+                    <div className="flex gap-6">
+                       {[
+                         { icon: FileText, label: "PDF/Data", color: "text-indigo-400" },
+                         { icon: Globe, label: "URL/Site", color: "text-amber-400" },
+                         { icon: Network, label: "Graph Import", color: "text-emerald-400" }
+                       ].map((btn, i) => (
+                         <div key={i} className="flex flex-col items-center gap-3 cursor-pointer group/btn">
+                            <div className="w-16 h-16 rounded-2xl bg-[#0a0c10] border border-white/10 flex items-center justify-center text-gray-500 group-hover/btn:text-white group-hover/btn:border-amber-500/50 group-hover/btn:scale-110 transition-all shadow-2xl">
+                               <btn.icon size={28} className={btn.color} />
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 group-hover/btn:text-gray-300 transition-colors">{btn.label}</span>
+                         </div>
+                       ))}
                     </div>
-                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Drop PDF/Data</span>
-                 </div>
-                 <div className="p-4 rounded-2xl bg-white/5 border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/[0.07] transition-all cursor-pointer group">
-                    <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
-                       <Globe size={20} />
-                    </div>
-                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Connect URL</span>
-                 </div>
-                 <div className="p-4 rounded-2xl bg-white/5 border border-dashed border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/[0.07] transition-all cursor-pointer group">
-                    <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
-                       <Network size={20} />
-                    </div>
-                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Import Graph</span>
+                    <div className="h-px w-20 bg-white/5" />
+                    <p className="text-[11px] font-mono text-gray-700 uppercase tracking-[0.4em]">Drop intelligence objects to ingest</p>
                  </div>
               </div>
+
+              <div className="flex flex-wrap gap-4 items-center justify-center opacity-50 hover:opacity-100 transition-opacity">
+                 <button 
+                  onClick={() => handleSubmit(undefined, "Synthesize a market intelligence report on solid-state battery startups.")}
+                  className="px-6 py-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-[11px] font-bold text-gray-400 tracking-widest uppercase flex items-center gap-2"
+                 >
+                    Sample Research: Solid-State Battery Landscape →
+                 </button>
+              </div>
+            </motion.div>
+          )}
 
               <div className="w-full bg-[#111113]/80 backdrop-blur-xl rounded-2xl border border-white/5 shadow-2xl overflow-visible focus-within:border-amber-500/50 transition-all duration-300 relative z-20 group">
                 <form onSubmit={handleSubmit} className="flex flex-col relative w-full">
@@ -381,8 +386,6 @@ export default function InfiniteCanvas() {
                   </div>
                 </form>
               </div>
-            </motion.div>
-          )}
 
           <AnimatePresence initial={false}>
             {messages.map((message, msgIdx) => {
