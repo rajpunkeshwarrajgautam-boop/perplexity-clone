@@ -137,25 +137,30 @@ Base your style on the best literature and copywriting practices.`;
     },
   });
 
-  const textStream = result.toTextStreamResponse();
-  const reader = textStream.body?.getReader();
-  if (!reader) return textStream;
-
-  // ── 8. Multiplex Streaming Context ───────────────────────────────────────
+  // ── 8. Multiplex Streaming Context (Applying AI Stream Protocol) ───────────
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
+      // 1. Send metadata & sources as custom markers
       if (currentChatId) controller.enqueue(encoder.encode(`e:${JSON.stringify({ chatId: currentChatId })}\n`));
       if (sources.length > 0) controller.enqueue(encoder.encode(`s:${JSON.stringify(sources)}\n`));
       
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        controller.enqueue(value);
+      // 2. Stream the AI text prefixed with '0:' (AI Stream Protocol format)
+      try {
+        for await (const textChunk of result.textStream) {
+          if (textChunk) {
+            controller.enqueue(encoder.encode(`0:${JSON.stringify(textChunk)}\n`));
+          }
+        }
+      } catch (streamErr) {
+        console.error('[Chat API] Streaming error:', streamErr);
       }
+      
       controller.close();
     },
-    cancel() { reader.cancel(); },
+    cancel() {
+      // ReadableStream cancellation handled by underlying textStream
+    },
   });
 
   return new Response(stream, {
