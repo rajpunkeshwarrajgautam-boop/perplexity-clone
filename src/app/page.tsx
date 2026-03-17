@@ -1,4 +1,6 @@
-import React, { Suspense, useState } from 'react';
+'use client';
+
+import React, { Suspense, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { BrainCircuit } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';

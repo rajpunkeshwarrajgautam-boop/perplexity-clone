@@ -58,36 +58,36 @@ export default function RootLayout({
   return (
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0e0e10]`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050508]`}
         >
-          <div className="flex h-screen w-full overflow-hidden text-gray-100 font-sans selection:bg-indigo-500/30">
+          <div className="flex h-screen w-full overflow-hidden text-gray-100 font-sans selection:bg-amber-500/30">
             {/* Desktop Sidebar */}
-            <div className="hidden md:flex flex-col border-r border-[#1e1e24] bg-[#111116] h-full shadow-2xl z-20 relative">
+            <div className="hidden md:flex flex-col border-r border-white/5 bg-[#050508] h-full shadow-2xl z-20 relative">
                <Sidebar />
                
                {/* User Auth Section built right into sidebar bottom */}
-               <div className="p-4 border-t border-[#1e1e24] flex items-center justify-between">
+               <div className="p-4 border-t border-white/5 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center font-bold text-xs shadow-md">ND</div>
+                      <div className="w-8 h-8 rounded-full bg-amber-500 text-black flex items-center justify-center font-bold text-xs shadow-md">ND</div>
                       <div className="flex flex-col">
                         <span className="text-sm font-medium">Developer Mode</span>
-                        <span className="text-xs text-gray-400">Pro Tier Active</span>
+                        <span className="text-xs text-gray-500">Pro Tier Active</span>
                       </div>
                     </div>
                </div>
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col h-full bg-[#0e0e10] overflow-hidden relative isolate">
+            <div className="flex-1 flex flex-col h-full bg-[#050508] overflow-hidden relative isolate">
                 {/* Mobile Auth Header overlay (only shows on mobile) */}
-                <div className="md:hidden flex items-center justify-between p-4 border-b border-[#1e1e24] sticky top-0 bg-[#0e0e10] z-20">
+                <div className="md:hidden flex items-center justify-between p-4 border-b border-white/5 sticky top-0 bg-[#050508] z-20">
                   <div className="font-semibold tracking-tight text-gray-100 flex items-center gap-2">
-                     <div className="w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                       <BrainCircuit size={14} className="text-white" />
+                     <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                       <BrainCircuit size={14} className="text-black" />
                      </div>
                      Aira
                   </div>
-                  <div className="text-xs bg-indigo-500 px-3 py-1 rounded text-white cursor-pointer hover:bg-indigo-600 transition-colors">Developer</div>
+                  <div className="text-xs bg-amber-500 px-3 py-1 rounded text-black font-bold cursor-pointer hover:bg-amber-600 transition-colors">Developer</div>
                 </div>
                 
                 {children}
